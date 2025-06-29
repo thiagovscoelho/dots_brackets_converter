@@ -148,7 +148,7 @@
       /** quantifiers: (∀x)  ∀x   (x) (binding‑var) */
       quantParen: /^\(\s*(∀|∃)([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)\s*\)/,
       quant: /^(∀|∃)([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)/,
-      bindVarParen: /^\(\s*([A-Za-z\u0370-\u03FF])\s*\)/,
+      bindVarParen: /^\(\s*([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)\s*\)/,
       /** negations */
       neg: /^(NOT|¬|−|∼|~)/,
       /** atom / predicate names */
@@ -165,6 +165,7 @@
       Binary: (op, weight) => ({ type: "Binary", op, weight }),
       LParen: { type: "LPAREN" },
       RParen: { type: "RPAREN" },
+      IotaQuant: (varName, desc) => ({ type: "IotaQuant", varName, desc }),
     };
 
     /****************
@@ -189,8 +190,86 @@
           s = s.slice(ws[0].length);
           continue;
         }
+        
+        // --- iota-quantifier  ((ιx)(ϕx)) ------------------------
+        if (s.startsWith("((")) {
+          const skipWS = () => { while (/\s/.test(s[pos])) pos++; };
+          let pos = 2;                           // after '(('
+          skipWS();
+          if (s[pos] === "ι") {
+            pos++;
+            const mVar = s.slice(pos).match(/^([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)/);
+            if (mVar) {
+              const varName = mVar[1];
+              pos += varName.length;
+              skipWS();
+              if (s[pos] === ")") {
+                pos++; skipWS();
+                if (s[pos] === "(") {
+                  pos++;
+                  const bodyStart = pos;
+                  let depth = 1;
+                  while (pos < s.length && depth) {
+                    if (s[pos] === "(") depth++;
+                    else if (s[pos] === ")") depth--;
+                    pos++;
+                  }
+                  if (!depth) {
+                    const desc = s.slice(bodyStart, pos - 1); // inner predicate
+                    skipWS();
+                    if (s[pos] === ")") {
+                      pos++;
+                      tokens.push(T.IotaQuant(varName, desc));
+                      s = s.slice(pos);
+                      continue;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // --- iota-ATOM  (ιx)(ψ) ---------------------------------
+        // Treat a single-parenthesis iota construction as a *single* atom,
+        // so it can freely appear on either side of binary operators.
+        if (s.startsWith("(ι")) {
+          const skipWS = () => { while (/\s/.test(s[pos])) pos++; };
+          let pos = 1;                      // after first '('
+          skipWS();
+          if (s[pos] === "ι") {
+            pos++;
+            const mVar = s.slice(pos).match(/^([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)/);
+            if (mVar) {
+              pos += mVar[1].length;
+              skipWS();
+              if (s[pos] === ")") {
+                pos++;                      // end of (ιx)
+                const after1 = pos;
+                skipWS();
+                if (s[pos] === "(") {
+                  /* capture the *whole* second parenthesised block, accounting
+                     for any nested parentheses inside ψ                       */
+                  let depth = 1, i = pos + 1;
+                  while (i < s.length && depth) {
+                    if (s[i] === "(") depth++;
+                    else if (s[i] === ")") depth--;
+                    i++;
+                  }
+                  if (!depth) {
+                    const fullAtom = s.slice(0, i);   // "(ιx)(ψ)"
+                    tokens.push(T.Atom(fullAtom));
+                    s = s.slice(i);
+                    continue;
+                  }
+                }
+              }
+            }
+          }
+        }
 
         // --- atom / predicate ------------------------------
+
         if (REGEX.atomName.test(s)) {
           const name = s.match(REGEX.atomName)[0];
           let full = name;
@@ -291,6 +370,10 @@
       } else if (node.type === "Not" || node.type === "Quant") {
         walkBinary(node.child, fn);
       }
+      if (node.type === "IotaQuant") {
+        walkBinary(node.desc, fn);
+        walkBinary(node.child, fn);
+      }
     };
 
     /**
@@ -346,6 +429,17 @@
           case "Quant":
             idx++;
             return { type: "Quant", sym: t.sym, varName: t.varName, child: parsePrimary() };
+          case "IotaQuant": {
+            idx++;
+            const innerToks = lexer(t.desc, "dots"); /* use “dots” because we are already in the dot-notation parser */
+            const innerAst  = parseDots(innerToks);
+            return {
+              type : "IotaQuant",
+              varName : t.varName,
+              desc : innerAst,
+              child : parsePrimary(),
+            };
+          }
           case "LPAREN":
             idx++;
             const expr = parseLevel(0);
@@ -388,6 +482,17 @@
           case "Quant":
             idx++;
             return { type: "Quant", sym: t.sym, varName: t.varName, child: parsePrimary() };
+          case "IotaQuant": {
+            idx++;
+            const innerToks = lexer(t.desc, "brackets"); /* use “brackets” because we are already in the bracket-notation parser */
+            const innerAst  = parseBrackets(innerToks);
+            return {
+              type : "IotaQuant",
+              varName : t.varName,
+              desc : innerAst,
+              child : parsePrimary(),
+            };
+          }
           case "LPAREN":
             idx++;
             const expr = parseExpr();
@@ -414,7 +519,11 @@
         annotateDepth(node.right, depth + 1);
       } else if (node.type === "Not" || node.type === "Quant") {
         annotateDepth(node.child, depth);
+      } else if (node.type === "IotaQuant") {
+        annotateDepth(node.desc, depth);
+        annotateDepth(node.child, depth);
       }
+
     }
 
     /** Assign dot‑weights based on annotated depth (root = max weight). */
@@ -441,6 +550,10 @@
           const prefix = node.sym ? `(${node.sym}${node.varName})` : `(${node.varName})`;
           return prefix + toBrackets(node.child, false);
         }
+        case "IotaQuant": {
+          const prefix = `((ι${node.varName})(${toBrackets(node.desc, false)}))`;
+          return prefix + toBrackets(node.child, false);
+        }
         case "Binary": {
           const left = toBrackets(node.left, false);
           const right = toBrackets(node.right, false);
@@ -463,6 +576,13 @@
           const prefix = node.sym ? `(${node.sym}${node.varName})` : `(${node.varName})`;
           const body = toDots(node.child);
           return ["Atom", "Not", "Quant"].includes(node.child.type) ? prefix + body : `${prefix}(${body})`;
+        }
+        case "IotaQuant": {
+          const prefix = `((ι${node.varName})(${toDots(node.desc)}))`;
+          const body   = toDots(node.child);
+          return ["Atom", "Not", "Quant", "IotaQuant"].includes(node.child.type)
+                 ? prefix + body
+                 : `${prefix}(${body})`;
         }
         case "Binary": {
           const left = toDots(node.left);
