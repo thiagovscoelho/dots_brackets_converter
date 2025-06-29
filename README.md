@@ -43,16 +43,16 @@ No dependencies or server required—everything runs in the browser.
 
 ```text
 Dots → Brackets
-p .→. q → r
-→ p → (q → r)
+input: p .→. q → r
+output: p → (q → r)
 
 Brackets → Dots
-(p → (q → r))
-→ p .→. q → r
+input: (p → (q → r))
+output: p .→. q → r
 
 Quantifiers + predicates:
-(∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
-→ ((∀ψ)(Mzψz ↔ Ωzψz)) → (DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz)))
+input: (∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
+output: ((∀ψ)(Mzψz ↔ Ωzψz)) → (DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz)))
 ```
 
 ## How It Works
