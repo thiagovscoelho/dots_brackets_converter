@@ -50,7 +50,7 @@
       "=","=Df","=Df.","=df","=df."
     ];
     const opPattern = opList.map(o => o.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')).sort((a,b)=>b.length-a.length).join('|');
-    const dottedOpRe = new RegExp('^([.:]*)(' + opPattern + ')([.:]*)');
+    const dottedOpRe = new RegExp('^([.:]*)\\s*(' + opPattern + ')\\s*([.:]*)');
     const opRe = new RegExp('^(' + opPattern + ')');
 
     // Quantifier regex (including Unicode)
