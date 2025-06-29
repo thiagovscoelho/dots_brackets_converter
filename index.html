@@ -47,7 +47,7 @@
       "≡","≢","↮",
       "⇐","⊂","←",
       "⊄","↚",
-      "=", "=df"
+      "=","=Df","=Df.","=df","=df."
     ];
     const opPattern = opList.map(o => o.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')).sort((a,b)=>b.length-a.length).join('|');
     const dottedOpRe = new RegExp('^([.:]*)(' + opPattern + ')([.:]*)');
@@ -64,6 +64,8 @@
 
     // Tokenize dot notation
     function tokenizeDots(input) {
+      // normalize square brackets
+      input = input.replace(/\[/g, '(').replace(/\]/g, ')');
       const tokens = [];
       let pos = 0;
       while (pos < input.length) {
@@ -124,6 +126,8 @@
 
     // Tokenize bracketed notation
     function tokenizeBrackets(input) {
+      // normalize square brackets
+      input = input.replace(/\[/g, '(').replace(/\]/g, ')');
       const tokens = [];
       let pos = 0;
       while (pos < input.length) {
