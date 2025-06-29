@@ -21,244 +21,283 @@
     <label><input type="radio" name="mode" value="dotsToBrackets" checked> Dots → Brackets</label>
     <label><input type="radio" name="mode" value="bracketsToDots"> Brackets → Dots</label>
   </div>
-  <textarea id="inputFormula" rows="4" placeholder="Enter your formula here..."></textarea>
+  <textarea id="inputFormula" rows="4" placeholder="Enter your formula..."></textarea>
   <div class="controls">
     <button id="convertBtn">Convert</button>
   </div>
   <pre id="outputFormula"></pre>
 
   <script>
-  // Count atomic dots: "." =1, ":" =2
-  function countDots(str) {
-    return (str.match(/\./g)||[]).length + (str.match(/:/g)||[]).length * 2;
-  }
-
-  // Supported binary operators
-  const opList = [
-    "&&","||","∥",
-    "⇔","⇋","↔",
-    "⇏","⊅","⇎","↛","⇍",
-    "⇒","⊃","→",
-    "∧","•","⋅","&",
-    "↑",
-    "∨","+","∣","|",
-    "↓",
-    "⊙","⊕",
-    "≡","≢","↮",
-    "⇐","⊂","←",
-    "⊄","↚",
-    "="
-  ];
-  const opPattern = opList
-    .map(op => op.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'))
-    .sort((a,b) => b.length - a.length)
-    .join('|');
-  const dottedOpRe = new RegExp('^([.:]*)(' + opPattern + ')([.:]*)');
-  const opRe = new RegExp('^(' + opPattern + ')');
-  const negRe = /^(NOT|¬|−|∼|~)/;
-
-  // Tokenizer for dots notation
-  function tokenizeDots(input) {
-    const tokens = [];
-    let pos = 0;
-    while (pos < input.length) {
-      const rest = input.slice(pos);
-      const ws = rest.match(/^\s+/);
-      if (ws) { pos += ws[0].length; continue; }
-      if (rest.startsWith('(')) { tokens.push({type:'LPAREN'}); pos++; continue; }
-      if (rest.startsWith(')')) { tokens.push({type:'RPAREN'}); pos++; continue; }
-      const mNeg = rest.match(negRe);
-      if (mNeg) {
-        tokens.push({type:'NOT', op: mNeg[1]});
-        pos += mNeg[0].length;
-        continue;
-      }
-      const m = rest.match(dottedOpRe);
-      if (m) {
-        const full = m[0], leftDots = m[1], op = m[2], rightDots = m[3];
-        const wL = countDots(leftDots), wR = countDots(rightDots);
-        if (wL !== wR) throw new Error('Mismatched dots in ' + full);
-        tokens.push({type:'BIN', op: op, weight: wL});
-        pos += full.length;
-        continue;
-      }
-      const atom = rest.match(/^[A-Za-z][A-Za-z0-9]*/);
-      if (atom) {
-        tokens.push({type:'ATOM', value: atom[0]});
-        pos += atom[0].length;
-        continue;
-      }
-      throw new Error('Unexpected char: ' + rest[0]);
+    // Count dots for precedence
+    function countDots(s) {
+      return (s.match(/\./g) || []).length + (s.match(/:/g) || []).length * 2;
     }
-    return tokens;
-  }
 
-  // Tokenizer for bracketed notation
-  function tokenizeBrackets(input) {
-    const tokens = [];
-    let pos = 0;
-    while (pos < input.length) {
-      const rest = input.slice(pos);
-      const ws = rest.match(/^\s+/);
-      if (ws) { pos += ws[0].length; continue; }
-      if (rest.startsWith('(')) { tokens.push({type:'LPAREN'}); pos++; continue; }
-      if (rest.startsWith(')')) { tokens.push({type:'RPAREN'}); pos++; continue; }
-      const mNeg = rest.match(negRe);
-      if (mNeg) {
-        tokens.push({type:'NOT', op: mNeg[1]});
-        pos += mNeg[0].length;
-        continue;
-      }
-      const m = rest.match(opRe);
-      if (m) {
-        tokens.push({type:'BIN', op: m[1], weight:0});
-        pos += m[0].length;
-        continue;
-      }
-      const atom = rest.match(/^[A-Za-z][A-Za-z0-9]*/);
-      if (atom) {
-        tokens.push({type:'ATOM', value: atom[0]});
-        pos += atom[0].length;
-        continue;
-      }
-      throw new Error('Unexpected char: ' + rest[0]);
-    }
-    return tokens;
-  }
+    // Operators & regex setup
+    const opList = [
+      "&&","||","∥",
+      "⇔","⇋","↔",
+      "⇏","⊅","⇎","↛","⇍",
+      "⇒","⊃","→",
+      "∧","•","⋅","&",
+      "↑",
+      "∨","+","∣","|",
+      "↓",
+      "⊙","⊕",
+      "≡","≢","↮",
+      "⇐","⊂","←",
+      "⊄","↚"
+    ];
+    const opPattern = opList.map(o => o.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')).sort((a,b)=>b.length-a.length).join('|');
+    const dottedOpRe = new RegExp('^([.:]*)(' + opPattern + ')([.:]*)');
+    const opRe = new RegExp('^(' + opPattern + ')');
 
-  // Parse dots notation
-  function parseDots(tokens) {
-    const origWs = tokens.filter(t=>t.type==='BIN').map(t=>t.weight);
-    const maxW = origWs.length ? Math.max(...origWs) : 0;
-    tokens.forEach(t => { if (t.type==='BIN') t.weight = maxW - t.weight; });
-    let idx = 0;
-    function parseLevel(level) {
-      if (level > maxW) return parsePrimary();
-      let node = parseLevel(level+1);
-      const seqN = [node], seqO = [];
-      while (tokens[idx] && tokens[idx].type==='BIN' && tokens[idx].weight===level) {
-        seqO.push(tokens[idx].op);
-        idx++;
-        seqN.push(parseLevel(level+1));
-      }
-      let subtree = seqN.pop();
-      while (seqN.length) {
-        const left = seqN.pop(), op = seqO.pop();
-        subtree = {type:'Binary', left, right: subtree, op};
-      }
-      return subtree;
-    }
-    function parsePrimary() {
-      if (tokens[idx] && tokens[idx].type==='NOT') {
-        const op = tokens[idx].op;
-        idx++;
-        const child = parsePrimary();
-        return {type:'Not', op, child};
-      }
-      const t = tokens[idx];
-      if (!t) return null;
-      if (t.type==='ATOM') { idx++; return {type:'Atom', value: t.value}; }
-      if (t.type==='LPAREN') { idx++; const expr = parseLevel(0); idx++; return expr; }
-      throw new Error('Parse error: ' + JSON.stringify(t));
-    }
-    return parseLevel(0);
-  }
+    // Quantifier regex (including Unicode)
+    const quantParensRe = /^\(\s*(∀|∃)([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)\s*\)/;
+    const quantRe = /^(∀|∃)([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)/;
+    const bindVarRe = /^\(\s*([A-Za-z\u0370-\u03FF])\s*\)/;
 
-  // Parse bracketed notation
-  function parseBrackets(tokens) {
-    let idx = 0;
-    function parseExpr() {
-      let node = parsePrimary();
-      while (tokens[idx] && tokens[idx].type==='BIN') {
-        const op = tokens[idx].op;
-        idx++;
-        const right = parseExpr();
-        node = {type:'Binary', left: node, right, op};
+    // Negation & atom/predicate regex
+    const negRe = /^(NOT|¬|−|∼|~)/;
+    const atomNameRe = /^[A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*/;
+
+    // Tokenize dot notation
+    function tokenizeDots(input) {
+      const tokens = [];
+      let pos = 0;
+      while (pos < input.length) {
+        const rest = input.slice(pos);
+        const ws = rest.match(/^\s+/);
+        if (ws) { pos += ws[0].length; continue; }
+        let m;
+        // Atom or predicate
+        if (rest[0].match(/[A-Za-z\u0370-\u03FF]/)) {
+          const name = rest.match(atomNameRe)[0];
+          let full = name;
+          let np = pos + name.length;
+          if (input[np] === '(') {
+            let depth = 1, i = np + 1;
+            while (i < input.length && depth) {
+              if (input[i] === '(') depth++;
+              else if (input[i] === ')') depth--;
+              i++;
+            }
+            if (depth !== 0) throw new Error('Unmatched parens in ' + name);
+            full += input.slice(np, i);
+            tokens.push({type:'Atom', value:full});
+            pos = i;
+          } else {
+            tokens.push({type:'Atom', value:full});
+            pos += name.length;
+          }
+          continue;
+        }
+        // Quantifiers
+        if (m = rest.match(quantParensRe)) {
+          tokens.push({type:'Quant', sym:m[1], varName:m[2]}); pos += m[0].length; continue;
+        }
+        if (m = rest.match(quantRe)) {
+          tokens.push({type:'Quant', sym:m[1], varName:m[2]}); pos += m[0].length; continue;
+        }
+        if (m = rest.match(bindVarRe)) {
+          tokens.push({type:'Quant', sym:null, varName:m[1]}); pos += m[0].length; continue;
+        }
+        // Negation
+        if (m = rest.match(negRe)) {
+          tokens.push({type:'Not', op:m[1]}); pos += m[0].length; continue;
+        }
+        // Dotted binary op
+        if (m = rest.match(dottedOpRe)) {
+          const [full, ld, op, rd] = m;
+          const w = countDots(ld);
+          if (countDots(rd) !== w) throw new Error('Mismatched dots in ' + full);
+          tokens.push({type:'Binary', op, weight:w}); pos += full.length; continue;
+        }
+        // Parens
+        if (rest[0] === '(') { tokens.push({type:'LPAREN'}); pos++; continue; }
+        if (rest[0] === ')') { tokens.push({type:'RPAREN'}); pos++; continue; }
+        throw new Error('Unexpected char: ' + rest[0]);
       }
-      return node;
+      return tokens;
     }
-    function parsePrimary() {
-      if (tokens[idx] && tokens[idx].type==='NOT') {
-        const op = tokens[idx].op;
-        idx++;
-        const child = parsePrimary();
-        return {type:'Not', op, child};
+
+    // Tokenize bracketed notation
+    function tokenizeBrackets(input) {
+      const tokens = [];
+      let pos = 0;
+      while (pos < input.length) {
+        const rest = input.slice(pos);
+        const ws = rest.match(/^\s+/);
+        if (ws) { pos += ws[0].length; continue; }
+        let m;
+        // Atom/predicate
+        if (rest[0].match(/[A-Za-z\u0370-\u03FF]/)) {
+          const name = rest.match(atomNameRe)[0];
+          let full = name;
+          let np = pos + name.length;
+          if (input[np] === '(') {
+            let depth = 1, i = np + 1;
+            while (i < input.length && depth) {
+              if (input[i] === '(') depth++;
+              else if (input[i] === ')') depth--;
+              i++;
+            }
+            if (depth !== 0) throw new Error('Unmatched parens in ' + name);
+            full += input.slice(np, i);
+            tokens.push({type:'Atom', value:full}); pos = i;
+          } else {
+            tokens.push({type:'Atom', value:full}); pos += name.length;
+          }
+          continue;
+        }
+        // Quantifiers
+        if (m = rest.match(quantParensRe)) { tokens.push({type:'Quant', sym:m[1], varName:m[2]}); pos += m[0].length; continue; }
+        if (m = rest.match(quantRe)) { tokens.push({type:'Quant', sym:m[1], varName:m[2]}); pos += m[0].length; continue; }
+        if (m = rest.match(bindVarRe)) { tokens.push({type:'Quant', sym:null, varName:m[1]}); pos += m[0].length; continue; }
+        // Negation
+        if (m = rest.match(negRe)) { tokens.push({type:'Not', op:m[1]}); pos += m[0].length; continue; }
+        // Binary op
+        if (m = rest.match(opRe)) { tokens.push({type:'Binary', op:m[1], weight:0}); pos += m[0].length; continue; }
+        // Parens
+        if (rest[0] === '(') { tokens.push({type:'LPAREN'}); pos++; continue; }
+        if (rest[0] === ')') { tokens.push({type:'RPAREN'}); pos++; continue; }
+        throw new Error('Unexpected char: ' + rest[0]);
       }
-      const t = tokens[idx];
-      if (!t) return null;
-      if (t.type==='ATOM') { idx++; return {type:'Atom', value: t.value}; }
-      if (t.type==='LPAREN') { idx++; const expr = parseExpr(); idx++; return expr; }
-      throw new Error('Parse error: ' + JSON.stringify(t));
+      return tokens;
     }
-    return parseExpr();
-  }
 
-  // Depth & weight for bracket→dots
-  function annotateDepth(n,d=0) {
-    if (n.type==='Binary') { n.depth=d; annotateDepth(n.left,d+1); annotateDepth(n.right,d+1); }
-    if (n.type==='Not') { annotateDepth(n.child,d); }
-  }
-  function assignWeights(n) {
-    const arr=[]; (function c(n){ if(n.type==='Binary'){ arr.push(n); c(n.left); c(n.right);} if(n.type==='Not'){ c(n.child);} })(n);
-    const maxD = arr.length ? Math.max(...arr.map(n=>n.depth)) : 0;
-    arr.forEach(n=>n.weight = maxD - n.depth);
-  }
-
-  // AST → bracketed
-  function toBrackets(n,isRoot=true) {
-    if (n.type==='Atom') return n.value;
-    if (n.type==='Not') {
-      const ch = toBrackets(n.child, false);
-      return n.op + (ch.startsWith('(') ? ch : ch);
+    // Parse Dots AST
+    function parseDots(tokens) {
+      const wsArr = tokens.filter(t => t.type==='Binary').map(t => t.weight);
+      const maxW = wsArr.length ? Math.max(...wsArr) : 0;
+      tokens.forEach(t => { if (t.type==='Binary') t.weight = maxW - t.weight; });
+      let idx = 0;
+      function parseLevel(level) {
+        if (level > maxW) return parsePrimary();
+        let node = parseLevel(level+1);
+        const seqN = [node], seqO = [];
+        while (tokens[idx] && tokens[idx].type==='Binary' && tokens[idx].weight===level) {
+          seqO.push(tokens[idx].op);
+          idx++;
+          seqN.push(parseLevel(level+1));
+        }
+        let subtree = seqN.pop();
+        while (seqN.length) {
+          const left = seqN.pop(), op = seqO.pop();
+          subtree = {type:'Binary', left, right: subtree, op};
+        }
+        return subtree;
+      }
+      function parsePrimary() {
+        const t = tokens[idx];
+        if (!t) return null;
+        if (t.type==='Not') { idx++; const child = parsePrimary(); return {type:'Not', op:t.op, child}; }
+        if (t.type==='Quant') { idx++; const child = parsePrimary(); return {type:'Quant', sym:t.sym, varName:t.varName, child}; }
+        if (t.type==='Atom') { idx++; return {type:'Atom', value:t.value}; }
+        if (t.type==='LPAREN') { idx++; const expr = parseLevel(0); if(tokens[idx]&&tokens[idx].type==='RPAREN') idx++; return expr; }
+        throw new Error('Parse error at ' + JSON.stringify(t));
+      }
+      return parseLevel(0);
     }
-    const left = toBrackets(n.left, false);
-    const right = toBrackets(n.right, false);
-    const s = left + ' ' + n.op + ' ' + right;
-    return isRoot ? s : '(' + s + ')';
-  }
 
-  // AST → dotted
-  function repFromWeight(g, op) {
-    let left, right;
-    if (g % 2 === 0) { const c = ':'.repeat(g/2); left = right = c; }
-    else { const c = ':'.repeat((g-1)/2); left='.'+c; right=c+'.'; }
-    return left + op + right;
-  }
-  function toDots(n) {
-    if (n.type==='Atom') return n.value;
-    if (n.type==='Not') {
-      if (n.child.type==='Binary') {
-        // preserve bracket around molecular negation
-        return n.op + toBrackets(n.child, false);
-      } else {
+    // Parse Brackets AST
+    function parseBrackets(tokens) {
+      let idx = 0;
+      function parseExpr() {
+        let node = parsePrimary();
+        while (tokens[idx] && tokens[idx].type==='Binary') {
+          const op = tokens[idx].op; idx++;
+          const right = parseExpr();
+          node = {type:'Binary', left: node, right, op};
+        }
+        return node;
+      }
+      function parsePrimary() {
+        const t = tokens[idx]; if (!t) return null;
+        if (t.type==='Not') { idx++; const child = parsePrimary(); return {type:'Not', op:t.op, child}; }
+        if (t.type==='Quant') { idx++; const child = parsePrimary(); return {type:'Quant', sym:t.sym, varName:t.varName, child}; }
+        if (t.type==='Atom') { idx++; return {type:'Atom', value:t.value}; }
+        if (t.type==='LPAREN') { idx++; const expr = parseExpr(); if(tokens[idx]&&tokens[idx].type==='RPAREN') idx++; return expr; }
+        throw new Error('Parse error at ' + JSON.stringify(t));
+      }
+      return parseExpr();
+    }
+
+    // Depth annotation & weight assignment
+    function annotateDepth(n, d=0) {
+      if (n.type==='Binary') { n.depth=d; annotateDepth(n.left, d+1); annotateDepth(n.right, d+1); }
+      if (n.type==='Not' || n.type==='Quant') annotateDepth(n.child, d);
+    }
+    function assignWeights(n) {
+      const arr = [];
+      (function c(x){ if(x.type==='Binary'){ arr.push(x); c(x.left); c(x.right);} if(x.type==='Not'||x.type==='Quant'){c(x.child);} })(n);
+      const maxD = arr.length ? Math.max(...arr.map(x=>x.depth)) : 0;
+      arr.forEach(x=>x.weight = maxD - x.depth);
+    }
+
+    // Serialize AST to brackets
+    function toBrackets(n, isRoot=true) {
+      if (n.type==='Atom') return n.value;
+      if (n.type==='Not') {
+        const ch = toBrackets(n.child, false);
+        return n.op + (ch.startsWith('(') ? ch : ch);
+      }
+      if (n.type==='Quant') {
+        const prefix = n.sym ? '('+n.sym+n.varName+')' : '('+n.varName+')';
+        return prefix + toBrackets(n.child, false);
+      }
+      const left = toBrackets(n.left, false);
+      const right = toBrackets(n.right, false);
+      const s = left + ' ' + n.op + ' ' + right;
+      return isRoot ? s : '('+s+')';
+    }
+
+    // Build dotted arrow
+    function repFromWeight(g, op) {
+      let left, right;
+      if(g%2===0){ const c=':'.repeat(g/2); left=right=c; }
+      else{ const c=':'.repeat((g-1)/2); left='.'+c; right=c+'.'; }
+      return left+op+right;
+    }
+
+    // Serialize AST to dots
+    function toDots(n) {
+      if (n.type==='Atom') return n.value;
+      if (n.type==='Not') {
+        if (n.child.type==='Binary') return n.op + toBrackets(n.child, false);
         return n.op + toDots(n.child);
       }
-    }
-    const left = toDots(n.left);
-    const right = toDots(n.right);
-    return left + ' ' + repFromWeight(n.weight, n.op) + ' ' + right;
-  }
-
-  // Conversion handler
-  document.getElementById('convertBtn').addEventListener('click', ()=>{
-    const mode = document.querySelector('input[name=mode]:checked').value;
-    const input = document.getElementById('inputFormula').value;
-    try {
-      let ast, out;
-      if (mode==='dotsToBrackets') {
-        ast = parseDots(tokenizeDots(input));
-        out = toBrackets(ast);
-      } else {
-        ast = parseBrackets(tokenizeBrackets(input));
-        annotateDepth(ast);
-        assignWeights(ast);
-        out = toDots(ast);
+      if (n.type==='Quant') {
+        const prefix = n.sym ? '('+n.sym+n.varName+')' : '('+n.varName+')';
+        const body = toDots(n.child);
+        if (['Atom','Not','Quant'].includes(n.child.type)) return prefix+body;
+        return prefix+'('+body+')';
       }
-      document.getElementById('outputFormula').textContent = out;
-    } catch(e) {
-      document.getElementById('outputFormula').textContent = 'Error: ' + e.message;
+      const left = toDots(n.left);
+      const right = toDots(n.right);
+      return left + ' ' + repFromWeight(n.weight, n.op) + ' ' + right;
     }
-  });
+
+    // Conversion handler
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      const mode = document.querySelector('input[name=mode]:checked').value;
+      const input = document.getElementById('inputFormula').value;
+      try {
+        let ast, out;
+        if (mode === 'dotsToBrackets') {
+          ast = parseDots(tokenizeDots(input));
+          out = toBrackets(ast);
+        } else {
+          ast = parseBrackets(tokenizeBrackets(input));
+          annotateDepth(ast);
+          assignWeights(ast);
+          out = toDots(ast);
+        }
+        document.getElementById('outputFormula').textContent = out;
+      } catch (e) {
+        document.getElementById('outputFormula').textContent = 'Error: '+e.message;
+      }
+    });
   </script>
 </body>
 </html>
