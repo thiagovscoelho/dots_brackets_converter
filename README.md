@@ -14,7 +14,7 @@ The program supports conversion between dot and bracket punctuation of logical f
 
 + **Definite description (iota):** Can be used as a quantifier, as in `((ιx)(ϕx))ψ`, or as an atom, as in `(ιx)(ϕx) & B`. Support for this is part of a plan for a future “PM Mode” which will parse dot notation according to [the rules for dot-parsing in *Principia Mathematica*](https://plato.stanford.edu/entries/pm-notation/dots.html).
 
-Square brackets, `[]`, are parsed interpreted as synonyms of round brackets `()`.
+Square brackets, `[]`, are interpreted as synonyms of round brackets, `()`.
 
 If you haven’t specified a bracketing, conversion will assume a right-associative bracketing, so `a → b → c → d` is interpreted as `a → (b → (c → d))` in brackets, or `a :→: b .→. c → d` in dots. **Note that this does not always capture user intent!** For instance, when reading `a|b` as “a divides b”, you might write `(a|b ∧ b|c) → a|c`, or alternatively, `a|b ∧ b|c .→. a|c`, which [is a mathematical truth](https://thiago-gpt.blogspot.com/2025/06/proof-that-ab-bc-ac.html). But `|` is a binary connective that can mean conjunction, or anything else, and no particular interpretation is assumed in parsing, so the program will parse this as `(a | (b ∧ (b | c))) → (a | c)`. I welcome suggestions on how to make this more intuitive, but for now, simply make sure your formula is *fully* bracketed/dotted rather than relying on precedence orders from a specific context. (In this case, the formula is `((a|b) ∧ (b|c)) → (a|c)` with brackets, or `a|b .∧. b|c :→: a|c` with dots.)
 
