@@ -420,11 +420,29 @@
     function parseDots(tokens) {
       if (!tokens.length) return null;
 
-      const opToks = tokens.filter(
-        (t) => t.type === "Binary" || (t.type === "Not" && t.weight !== undefined)
-      );
-      const maxWeight = opToks.length ? Math.max(...opToks.map((t) => t.weight)) : 0;
-      opToks.forEach((t) => (t.weight = maxWeight - t.weight));
+        /* ────────────────────────────────────────────────────────────
+           Give every token an integer “precedence weight”.
+           •  More dots   ⇒  *smaller* precedence (binds looser).
+           •  A dotted NOT is one step tighter than a binary operator
+             that has the *same* dot count.
+           (Higher numeric weight  →  tighter binding.)
+           ─────────────────────────────────────────────────────────── */
+        const maxDot = Math.max(
+          0,
+          ...tokens.filter(t => t.type === "Binary").map(t => t.weight)
+        );
+
+        tokens.forEach(t => {
+          const base = (maxDot - t.weight) * 2;     // 0,2,4,…
+          if (t.type === "Binary")            t.weight = base;       // even
+          else if (t.type === "Not" && t.weight !== undefined)
+                                              t.weight = base + 1;   // odd, tighter
+        });
+
+        const maxWeight = Math.max(
+          0,
+          ...tokens.filter(t => t.weight !== undefined).map(t => t.weight)
+        );
 
       let idx = 0;
 
@@ -470,9 +488,24 @@
           case "Atom":
             idx++;
             return t;
-          case "Not":
-            idx++;
-            return { type: "Not", op: t.op, child: parsePrimary() };
+
+            case "Not": {
+              idx++;  // consume the token
+
+              if (t.weight !== undefined) {
+                /* dotted NOT → its operand is everything of *higher* precedence */
+                return {
+                  type  : "Not",
+                  op    : t.op,
+                  child : parseLevel(t.weight + 1),
+                };
+              }
+
+              /* plain NOT (unchanged) */
+              return { type: "Not", op: t.op, child: parsePrimary() };
+            }
+
+
           case "Quant":
             idx++;
             return { type: "Quant", sym: t.sym, varName: t.varName, child: parsePrimary() };
