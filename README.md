@@ -8,7 +8,7 @@ The program supports conversion between dot and bracket punctuation of logical f
 
 + **Binary connectives:** `→`, `⇒`, `⊃`, `∧`, `•`, `⋅`, `&`, `&&`, `∨`, `+`, `|`, `||`, `⊕`, `⊙`, `↑`, `↓`, `≡`, `≢`, `⇔`, `⇋`, `↔`, `↮`, `⇏`, `↛`, `⊅`, `⇍`, `⊄`, `↚`, `=`, `=Df`, `=Df.`, `=df`, `=df.`
 
-+ **Negation:** `¬`, `−`, `∼`, `~` (atomic & molecular)
++ **Negation:** `¬`, `−`, `∼`, `~`
 
 + **Quantifiers:** Formulas can be preceded with `∀x`, `∃x`, `(∀x)`, `(x)`, etc. Currently, a single letter in parentheses is only interpreted as a quantifier if it is lowercase, so as to allow `(x)(x=x)` but still prevent `(∀x)(A)` from being interpreted as a pair of quantifiers on `null`, which gives an error. (I welcome pull requests to improve this.)
 
