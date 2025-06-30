@@ -178,9 +178,9 @@
     /** Token‑factory helpers */
     const T = {
       Atom: (v) => ({ type: "Atom", value: v }),
-      Not  : (op, weight = undefined) => ({ type: "Not", op, weight }),
+      Not: (op, weight = undefined, rawDots = 0) => ({ type:"Not", op, weight, rawDots }),
       Quant: (sym, varName) => ({ type: "Quant", sym, varName }),
-      Binary: (op, weight) => ({ type: "Binary", op, weight }),
+      Binary: (op, weight, ldLen = 0) => ({ type:"Binary", op, weight, ldots: ldLen }),
       LParen: { type: "LPAREN" },
       RParen: { type: "RPAREN" },
       IotaQuant: (varName, desc) => ({ type: "IotaQuant", varName, desc }),
@@ -343,7 +343,7 @@
             const [, ldots, op, rdots] = m;
             const weight = Math.max(countDots(ldots), countDots(rdots));
             if (weight > 0) {                        // only treat as dotted if dots found
-              tokens.push(T.Not(op, weight));
+              tokens.push(T.Not(op, weight, ldots.length || rdots.length));
               s = s.slice(m[0].length);
               continue;
             }
@@ -360,7 +360,7 @@
           if ((m = s.match(REGEX.dottedBinary))) {
             const [, ldots, op, rdots] = m;
             const weight = Math.max(countDots(ldots), countDots(rdots)); // tolerate one-sided / uneven dot strings
-            tokens.push(T.Binary(op, weight));
+            tokens.push(T.Binary(op, weight, ldots.length));
             s = s.slice(m[0].length);
             continue;
           }
@@ -420,12 +420,23 @@
     function parseDots(tokens) {
       if (!tokens.length) return null;
 
+
+
+
         /* ────────────────────────────────────────────────────────────
-           Give every token an integer “precedence weight”.
-           •  More dots   ⇒  *smaller* precedence (binds looser).
-           •  A dotted NOT is one step tighter than a binary operator
-             that has the *same* dot count.
-           (Higher numeric weight  →  tighter binding.)
+           Precedence weights for dot-notation
+
+              d  = number of dots/colons on the operator’s *left* side
+              D  = max d among *binary* operators in this formula
+
+           We assign
+                Binary(d)  →  w = 2·(D − d) + 1        (odd)
+                Not   (d)  →  w = 2·(D − d) + 2        (even, one step tighter)
+
+           Thus a dotted NOT binds more tightly than any binary operator
+           that shows the same dot-group, but less tightly than binaries
+           with *smaller* dot-groups.  This matches all the classical
+           examples and the user’s test cases.
            ─────────────────────────────────────────────────────────── */
         const maxDot = Math.max(
           0,
@@ -433,16 +444,19 @@
         );
 
         tokens.forEach(t => {
-          const base = (maxDot - t.weight) * 2;     // 0,2,4,…
-          if (t.type === "Binary")            t.weight = base;       // even
-          else if (t.type === "Not" && t.weight !== undefined)
-                                              t.weight = base + 1;   // odd, tighter
+          const d = t.weight;                       // original dot count
+          if (t.type === "Binary") {
+            t.weight = 2 * (maxDot - d) + 1;        // 1,3,5,…
+          } else if (t.type === "Not" && d !== undefined) {
+            t.weight = 2 * (maxDot - d) + 2;        // 2,4,6,…
+          }
         });
 
         const maxWeight = Math.max(
           0,
           ...tokens.filter(t => t.weight !== undefined).map(t => t.weight)
         );
+
 
       let idx = 0;
 
@@ -451,12 +465,12 @@
         /* prefix dotted negations of this very level */
         const prefixes = [];
         while (
-        tokens[idx] &&
-        tokens[idx].type === "Not" &&
-        tokens[idx].weight !== undefined &&
-        tokens[idx].weight === level
+          tokens[idx] &&
+          tokens[idx].type === "Not" &&
+          tokens[idx].weight !== undefined &&
+          tokens[idx].weight === level
         ) {
-        prefixes.push(tokens[idx++]);
+          prefixes.push(tokens[idx++]);
         }
         let node = parseLevel(level + 1);
         /* apply dotted negations right-to-left */
@@ -489,21 +503,13 @@
             idx++;
             return t;
 
-            case "Not": {
-              idx++;  // consume the token
 
-              if (t.weight !== undefined) {
-                /* dotted NOT → its operand is everything of *higher* precedence */
-                return {
-                  type  : "Not",
-                  op    : t.op,
-                  child : parseLevel(t.weight + 1),
-                };
-              }
+        case "Not":
+          idx++;                                    // consume the NOT
+          /*  undotted NOT is handled here;
+              dotted NOTs were already collected as prefixes in parseLevel() */
+          return { type: "Not", op: t.op, child: parsePrimary() };
 
-              /* plain NOT (unchanged) */
-              return { type: "Not", op: t.op, child: parsePrimary() };
-            }
 
 
           case "Quant":
