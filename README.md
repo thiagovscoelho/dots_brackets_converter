@@ -51,17 +51,17 @@ Output:  S → (P → Q) → ((S → P) → (S → Q))
 
 # Brackets → Dots (Landini style)
 Input:   (S → (P → Q)) → ((S → P) → (S → Q))
-Output:  S .→. P → Q :→: S → P .→. S → Q
+Output:   S .→. P → Q :→: S → P .→. S → Q
 
-# Molecular Negation
-Input:   ~(A → B)
-• No dots:   ~(A → B)
-• With dots: ~. A → B
-• Strict hier: ~. A :→: B
+# Dot molecular negation (Brackets → Dots)
+Bracketed input:          ~(A → B) → (A → B)
+• DMN off:               ~(A → B) .→. A → B
+• DMN on (less strict):  ~. A → B .→. A → B
+• DMN on (stricter):     ~. A → B :→: A → B
 
 # Iota Expressions
 Brackets:  ((ιx)(ϕx))((x & (ιy)(ϕy)) → (z = w))
-Dots:  ((ιx)(ϕx))(x & (ιy)(ϕy) .→. z = w)
+Dots:       ((ιx)(ϕx))(x & (ιy)(ϕy) .→. z = w)
 
 # Quantifiers + Predicates
 Input:   (∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
