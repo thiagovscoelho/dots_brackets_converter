@@ -2,6 +2,8 @@
 
 **The Dots–Brackets Converter**, live [here](https://thiagovscoelho.github.io/dots_brackets_converter/), is a lightweight, framework‑agnostic tool for converting between Church-style dot notation (e.g. `.→.`, `:→:`, `.`‑weighted operators) and standard bracketed notation (`(… → …)`). It handles a wide array of logical constructs, offers configurable parsing and serialization strategies, and requires no external dependencies.
 
+To test the program, try converting the tautology `((¬c ⊃ b) ⊃ ((b ⊃ a) ⊃ ((c ⊃ a) ⊃ a))) ⊃ ((d ⊃ (¬c ⊃ b)) ⊃ ((b ⊃ a) ⊃ ((c ⊃ a) ⊃ (d ⊃ a))))` from bracket form to dot form, which should give you `¬c :⊃: b .:⊃:. b .⊃. a :⊃: c ⊃ a .⊃. a ::⊃:: d :⊃: ¬c .⊃. b .:⊃:. b .⊃. a :⊃: c ⊃ a .⊃. d ⊃ a`. Converting the dot form to bracket form will also work.
+
 ## Conversion
 
 The program supports conversion between dot and bracket punctuation of logical formulas with these symbols:
