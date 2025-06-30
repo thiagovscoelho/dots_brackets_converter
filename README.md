@@ -1,29 +1,67 @@
-# The Dots–Brackets Converter
+# Dots–Brackets Converter
 
-A lightweight, client‑side web application for converting logical formulas between **dot‑notation** and **fully parenthesized bracket** notation. Built with plain HTML, CSS, and JavaScript—no build tools or server required.
+**The Dots–Brackets Converter** is a lightweight, framework‑agnostic tool for converting between Frege‑style dot notation (e.g. `.→.`, `:→:`, `.`‑weighted operators) and standard bracketed notation (`(… → …)`). It handles a wide array of logical constructs, offers configurable parsing and serialization strategies, and requires no external dependencies.
 
 ## Features
 
-* **Bidirectional conversion**:
+**Dots → Brackets conversion:** Conversion is done with tolerance for asymmetry or stronger-than-needed dots. You can write `p .→. p → q`, or `p →. p → q`, or `p .→ p → q`, or `p ::→ p → q`, and either way, it will parse as `p → (p → q)`.
 
-  * **Dots → Brackets**: Grouping by dot‑counts (., :, ::, etc.) yields a fully bracketed lambda‑calculus style formula.
-  * **Brackets → Dots**: Infers dot‑group weights from nesting depth.
-* **Connective support**:
+**Brackets → Dots conversion:** Conversion assumes a bracketing if you haven’t given one, so `a → b → c → d` is interpreted as `a → (b → (c → d))` and converted to `a :→: b .→. c → d`. Dots are always written symmetrically, as Gregory Landini did, so `p → (p → q)` is written `p .→. p → q`. If you prefer the dots on only one side of the connective, as many authors did, then simply erase them from the unwanted side yourself. I have not bothered making a customized, automated way to omit dots from one side, since I do not think there was any rhyme or reason to how authors chose to do so, and I do not think there are any clear “most logical” ways to do it. However, I have given the user conversion options regarding one issue that I did look into in depth:
 
-  * IMPLIES: `→`, `⇒`, `⊃`
-  * AND: `∧`, `•`, `⋅`, `&`, `&&`
-  * OR: `∨`, `+`, `|`, `||`
-  * XOR / XNOR: `⊕`, `⊙`
-  * NAND / NOR: `↑`, `↓`
-  * EQUIV / NEQUIV: `≡`, `≢`, `⇔`, `⇋`, `↔`, `↮`
-  * NIMPLIES / NIF: `⇏`, `↛`, `⊅`, `⇍`, `⊄`, `↚`
-* **Negation operators**: `NOT`, `¬`, `−`, `∼`, `~` on atoms and full formulas.
-* **Quantifier & binder support**:
++ **Molecular negation:** One issue that came up when developing this project was the issue of what I’m calling *molecular negation*, i.e., of negating an entire formula, as in `~(A → B)`, rather than an atom, as in `~A` or `~B`. It seems many authors, such as Russell and Whitehead and Landini and Quine, ***never*** used dot notation for this, they always used brackets for molecular negation, even though they otherwise used dot notation. So I have given the user the option to either **dot molecular negation** or leave it undotted. For instance, if **dot molecular negation** is turned on, then `~(p & (p → q))` is written as `~: p .&. p → q`, but if it is turned off, then it is written as `~(p .&. p → q)`.
 
-  * First‑order: `∀x`, `∃x`, `(∀x)`, `(x)`.
-  * Second‑order: `∀ψ`, `∃ψ`, etc.
-* **Predicate & function symbols**: Handles atomic applications like `P(x)`, `DDD(Mzϕz)` as single tokens.
-* **Unicode identifiers**: Greek letters (ψ, Ω, ϕ) allowed in variable and predicate names.
++ **Stricter hierarchy:** Among the authors who *did* use dots for molecular negation, such as Church and Robbin and Chwistek, none used dots *exclusively*. Whenever they felt like it, they used brackets instead. This allowed them to evade a question about how dots for molecular negation should even work: is the formula `~. A → B .→. ~. A → B` well-written, or is it ambiguous? It is unambiguous in that the intent is clearly `~(A → B) → (~A → B)`, which is how I have made the program read it when converting from dots to brackets. But it allows a group of dots to be stronger than a group of dots of *equal size* (in this case, 1 dot) in a way which was never explicitly laid out as a grammar rule. When converting `~(A → B) → (~A → B)` from brackets to dots, you will get `~. A → B .→. ~. A → B` if the option to **use stricter hierarchy** is turned off, and `~. A → B :→: ~A → B` if it is on.
+
+## Supported Expressions
+
++ **Binary Connectives:** `→`, `⇒`, `⊃`, `∧`, `•`, `⋅`, `&`, `&&`, `∨`, `+`, `|`, `||`, `⊕`, `⊙`, `↑`, `↓`, `≡`, `≢`, `⇔`, `⇋`, `↔`, `↮`, `⇏`, `↛`, `⊅`, `⇍`, `⊄`, `↚`, `=Df`, `=Df.`, `=df`, `=df.`
+
++ **Negation:** `¬`, `−`, `∼`, `~` (atomic & molecular)
+
++ **Quantifiers:** Formulas can be preceded with `∀x`, `∃x`, `(∀x)`, `(x)`, etc. Currently, a single letter in parentheses is only interpreted as a quantifier if it is lowercase, so as to allow `(x)(x=x)` but still prevent `(∀x)(A)` from being interpreted as a pair of quantifiers on `null`, which gives an error. (I welcome pull requests to improve this.)
+
++ **Definite Description (Iota):** Can be used as a quantifier, as in `((ιx)(ϕx))ψ`, or as an atom, as in `(ιx)(ϕx) & B`.
+
+## Usage
+
+1. **Open** the `index.html` in any modern browser.
+2. **Enter** your formula in the textarea.
+3. **Select** conversion mode:
+
+   * **Dots → Brackets**
+   * **Brackets → Dots**
+4. When in **Brackets → Dots** mode:
+
+   * Toggle **Dot molecular negation** to dot full‑formula negations.
+   * (If enabled) Toggle **Use stricter hierarchy** to adjust dot strength.
+5. **Click** **Convert** and view the result.
+
+## Examples
+
+```
+# Dots → Brackets (tolerant)
+Input:   S→.P→Q:→:S→P.→.S→Q
+Output:  S → (P → Q) → ((S → P) → (S → Q))
+
+# Brackets → Dots (Landini style)
+Input:   (S → (P → Q)) → ((S → P) → (S → Q))
+Output:  S .→. P → Q :→: S → P .→. S → Q
+
+# Molecular Negation
+Input:   ~(A → B)
+• No dots:   ~(A → B)
+• With dots: ~. A → B
+• Strict hier: ~. A :→: B
+
+# Iota Expressions
+Input:   ((ιx)(ϕx)) (x = y)
+Dots → Brackets:  ((ιx)(ϕx)) → (x = y)
+Brackets → Dots:  ((ιx)(ϕx)) :→: (x = y)
+
+# Quantifiers + Predicates
+Input:   (∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
+Output:  ((∀ψ)(Mzψz ↔ Ωzψz)) → (DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz)))
+```
 
 ## Installation
 
@@ -32,45 +70,10 @@ A lightweight, client‑side web application for converting logical formulas bet
 
 No dependencies or server required—everything runs in the browser.
 
-## Usage
-
-1. Select **"Dots → Brackets"** or **"Brackets → Dots"** mode using the radio buttons.
-2. Enter your formula in the textarea (supports whitespace).
-3. Click **Convert**.
-4. The result appears in the read‑only output box.
-
-### Examples
-
-```text
-Dots → Brackets
-input: p .→. q → r
-output: p → (q → r)
-
-Brackets → Dots
-input: (p → (q → r))
-output: p .→. q → r
-
-Quantifiers + predicates:
-input: (∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
-output: ((∀ψ)(Mzψz ↔ Ωzψz)) → (DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz)))
-```
-
-## How It Works
-
-1. **Tokenization**: Regex‑based scanner groups atoms, predicate applications, quantifiers, negations, and operators (with dot‑counts).
-2. **AST Parsing**:
-
-   * **Dots**: Precedence levels derived from dot counts, bigger groups bind more weakly.
-   * **Brackets**: Standard recursive‑descent on parentheses.
-3. **Serialization**:
-
-   * **toBrackets()**: Fully parenthesizes binary expressions.
-   * **toDots()**: Replaces parentheses with dot annotations, preserving necessary grouping for predicates and quantifiers.
-
 ## Contributing
 
-Improvements, bug reports, and feature requests are welcome! Feel free to open issues or pull requests.
+Pull requests welcome for bug fixes, new connectives, or UI improvements.
 
 ## License
 
-I release this code into the public domain.
+This project is **public domain** (CC0). 

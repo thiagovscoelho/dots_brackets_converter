@@ -50,6 +50,10 @@
   <div class="controls">
     <button id="convertBtn">Convert</button>
   </div>
+  <div class="controls" id="dotNegOption" style="display:none">
+  <label><input type="checkbox" id="dotNegChk"> Dot molecular negation</label>
+  <label style="margin-left:1em;"><input type="checkbox" id="strictHierChk"> Use stricter hierarchy</label>
+  </div>
   <pre id="outputFormula"></pre>
 
   <!-- === Logic === -->
@@ -64,6 +68,19 @@
      *    • Constants & regex construction in one place – no duplication.
      *    • UI wiring kept minimal and framework‑agnostic.
      */
+     
+    /*********************
+    *  Serial utilities *
+    *********************/
+
+    /* helper: build a dot/colon string of weight w */
+    const dotStr = (w) =>
+      w === 0
+        ? ""
+        : w % 2 === 0
+            ? ":".repeat(w / 2)
+            : "." + ":".repeat((w - 1) / 2);
+
 
     /*********************
      *  Shared Utilities  *
@@ -155,12 +172,13 @@
       atomName: /^[A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*/,
       /** whitespace */
       ws: /^\s+/,
+      dottedNeg : /^([.:]*)\s*(NOT|¬|−|∼|~)\s*([.:]*)/,
     };
 
     /** Token‑factory helpers */
     const T = {
       Atom: (v) => ({ type: "Atom", value: v }),
-      Not: (op) => ({ type: "Not", op }),
+      Not  : (op, weight = undefined) => ({ type: "Not", op, weight }),
       Quant: (sym, varName) => ({ type: "Quant", sym, varName }),
       Binary: (op, weight) => ({ type: "Binary", op, weight }),
       LParen: { type: "LPAREN" },
@@ -304,15 +322,35 @@
           s = s.slice(m[0].length);
           continue;
         }
+        // --- bind-variable in parentheses  (x) -------------------
         if ((m = s.match(REGEX.bindVarParen))) {
-          tokens.push(T.Quant(null, m[1]));
-          s = s.slice(m[0].length);
-          continue;
+          /* A single letter in parentheses, if lowercase, will be
+          expected to be a binding variable, as in (x)(x=x).*/
+          if (/^[a-z]/.test(m[1])) {
+            tokens.push(T.Quant(null, m[1]));
+            s = s.slice(m[0].length);
+            continue;
+          }
+          /* If uppercase, it will be assumed to be a formula. */
+          /* This is a hack to prevent (∀x)(A) or ∀x(A) from being
+          interpreted as a pair of quantifiers on null,
+          which gives an error.*/
         }
 
-        // --- negation -------------------------------------
+        // --- negation (plain & dotted) ---------------------
+        if (notationMode === "dots") {
+          if ((m = s.match(REGEX.dottedNeg))) {
+            const [, ldots, op, rdots] = m;
+            const weight = Math.max(countDots(ldots), countDots(rdots));
+            if (weight > 0) {                        // only treat as dotted if dots found
+              tokens.push(T.Not(op, weight));
+              s = s.slice(m[0].length);
+              continue;
+            }
+          }
+        }
         if ((m = s.match(REGEX.neg))) {
-          tokens.push(T.Not(m[1]));
+          tokens.push(T.Not(m[1]));                  // ordinary, weight-less NOT
           s = s.slice(m[0].length);
           continue;
         }
@@ -382,22 +420,32 @@
     function parseDots(tokens) {
       if (!tokens.length) return null;
 
-      // Highest weight → lowest precedence.
-      const maxWeight = Math.max(
-        0,
-        ...tokens.filter((t) => t.type === "Binary").map((t) => t.weight)
+      const opToks = tokens.filter(
+        (t) => t.type === "Binary" || (t.type === "Not" && t.weight !== undefined)
       );
-
-      // Re‑map so that weight 0 == highest precedence.
-      tokens.forEach((t) => {
-        if (t.type === "Binary") t.weight = maxWeight - t.weight;
-      });
+      const maxWeight = opToks.length ? Math.max(...opToks.map((t) => t.weight)) : 0;
+      opToks.forEach((t) => (t.weight = maxWeight - t.weight));
 
       let idx = 0;
 
       function parseLevel(level) {
         if (level > maxWeight) return parsePrimary();
+        /* prefix dotted negations of this very level */
+        const prefixes = [];
+        while (
+        tokens[idx] &&
+        tokens[idx].type === "Not" &&
+        tokens[idx].weight !== undefined &&
+        tokens[idx].weight === level
+        ) {
+        prefixes.push(tokens[idx++]);
+        }
         let node = parseLevel(level + 1);
+        /* apply dotted negations right-to-left */
+        while (prefixes.length) {
+        const tok = prefixes.pop();
+        node = { type: "Not", op: tok.op, child: node };
+        }
         const nodes = [node];
         const ops = [];
         while (tokens[idx] && tokens[idx].type === "Binary" && tokens[idx].weight === level) {
@@ -562,31 +610,67 @@
       }
     }
 
-    function toDots(node) {
+    function toDots(node, dotNeg = false, strictHier = false) {
       switch (node.type) {
         case "Atom":
           return node.value;
         case "Not": {
-          // If child is a binary, keep brackets for clarity.
-          const body = node.child.type === "Binary" ? toBrackets(node.child, false) : toDots(node.child);
-          return node.op + body;
+          if (dotNeg && node.child.type === "Binary") {
+            const w    = (node.child.weight ?? 0) + 1;
+            const pref = node.op + dotStr(w);
+            return `${pref} ${toDots(node.child, dotNeg, strictHier)}`;
+          }
+          /* ordinary form — keep the brackets if the body is molecular */
+          const inner = toDots(node.child, dotNeg, strictHier);
+          return node.op + (node.child.type === "Binary" ? `(${inner})` : inner);
         }
         case "Quant": {
-          const prefix = node.sym ? `(${node.sym}${node.varName})` : `(${node.varName})`;
-          const body = toDots(node.child);
-          return ["Atom", "Not", "Quant"].includes(node.child.type) ? prefix + body : `${prefix}(${body})`;
-        }
-        case "IotaQuant": {
-          const prefix = `((ι${node.varName})(${toDots(node.desc)}))`;
-          const body   = toDots(node.child);
-          return ["Atom", "Not", "Quant", "IotaQuant"].includes(node.child.type)
+          const prefix = node.sym ? `(${node.sym}${node.varName})`
+                                  : `(${node.varName})`;
+          const body   = toDots(node.child, dotNeg, strictHier);
+          return ["Atom","Not","Quant","IotaQuant"].includes(node.child.type)
                  ? prefix + body
                  : `${prefix}(${body})`;
         }
+        case "IotaQuant": {
+          const prefix = `((ι${node.varName})(${toDots(node.desc, dotNeg, strictHier)}))`;
+          const body   = toDots(node.child, dotNeg, strictHier);
+          return ["Atom","Not","Quant","IotaQuant"].includes(node.child.type)
+                 ? prefix + body
+                 : `${prefix}(${body})`;
+        }
+
         case "Binary": {
-          const left = toDots(node.left);
-          const right = toDots(node.right);
-          return `${left} ${dottedRep(node.weight, node.op)} ${right}`;
+          let w = node.weight;
+
+          if (strictHier && dotNeg) {
+            /* if either child is a dotted-NOT whose dot-weight ≥ w,
+               promote this operator by one level                        */
+            const childNegWeight = (n) =>
+              n.type === "Not" && n.child.type === "Binary" ? (n.child.weight ?? 0) + 1 : -1;
+
+            const needBump =
+              Math.max(childNegWeight(node.left), childNegWeight(node.right)) >= w;
+
+            if (needBump) w += 1;
+          }
+
+          /* ▸  allow weight-relaxation when Dot-Negation is OFF
+             ---------------------------------------------------
+             If neither operand is itself a naked Binary node, we can safely
+             write the outer operator without dots — parentheses or unary
+             wrappers already fix the grouping.                            */
+          if (!dotNeg && w > 0) {
+            const leftIsBin  = node.left.type  === "Binary";
+            const rightIsBin = node.right.type === "Binary";
+            if (!leftIsBin && !rightIsBin) {
+              w = 0;           // drop to the bare operator (no dots)
+            }
+          }
+
+          const left  = toDots(node.left,  dotNeg, strictHier);
+          const right = toDots(node.right, dotNeg, strictHier);
+          return `${left} ${dottedRep(w, node.op)} ${right}`;
         }
       }
     }
@@ -595,31 +679,57 @@
      *  UI Binding  *
      ****************/
 
-    const qs = (sel) => document.querySelector(sel);
-    const $in = qs("#inputFormula");
-    const $out = qs("#outputFormula");
+    const qs            = (sel) => document.querySelector(sel);
+    const $in           = qs("#inputFormula");
+    const $out          = qs("#outputFormula");
+    const $dotNegChk    = qs("#dotNegChk");
+    const $dotNegOption = qs("#dotNegOption");
+    const $strictChk     = qs("#strictHierChk");
 
-    qs("#convertBtn").addEventListener("click", () => {
+    /* show the second checkbox only when dot-negation is enabled */
+    $dotNegChk.addEventListener("change", () => {
+      $strictChk.parentElement.style.display =
+        $dotNegChk.checked ? "" : "none";
+    });
+    /* keep it hidden at first */
+    $strictChk.parentElement.style.display = "none";
+
+    /* show / hide the whole option block as before */
+    function toggleDotNegUI() {
       const mode = qs("input[name=mode]:checked").value;
-      const val = $in.value.trim();
+      $dotNegOption.style.display = mode === "bracketsToDots" ? "" : "none";
+    }
+    document.querySelectorAll("input[name=mode]").forEach((r) =>
+      r.addEventListener("change", toggleDotNegUI)
+    );
+    toggleDotNegUI();   // initial state
+
+    /* main click handler – now grabs the new flag */
+    qs("#convertBtn").addEventListener("click", () => {
+      const mode        = qs("input[name=mode]:checked").value;
+      const val         = $in.value.trim();
+      const dotNeg      = $dotNegChk.checked;
+      const strictHier  = dotNeg && $strictChk.checked;   // only relevant if dotNeg
+
       try {
         let ast, result;
         if (mode === "dotsToBrackets") {
           const tokens = lexer(val, "dots");
-          ast = parseDots(tokens);
+          ast    = parseDots(tokens);
           result = toBrackets(ast);
         } else {
           const tokens = lexer(val, "brackets");
           ast = parseBrackets(tokens);
           annotateDepth(ast);
           assignWeights(ast);
-          result = toDots(ast);
+          result = toDots(ast, dotNeg, strictHier);
         }
         $out.textContent = result;
       } catch (err) {
         $out.textContent = "Error: " + err.message;
       }
     });
+    
   </script>
 </body>
 </html>
