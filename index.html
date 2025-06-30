@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Dots–Brackets Converter (Refactored)</title>
+  <title>The Dots–Brackets Converter</title>
   <style>
     body {
       font-family: sans-serif;
@@ -321,8 +321,7 @@
         if (notationMode === "dots") {
           if ((m = s.match(REGEX.dottedBinary))) {
             const [, ldots, op, rdots] = m;
-            const weight = countDots(ldots);
-            if (countDots(rdots) !== weight) throw new Error("Mismatched dots: " + m[0]);
+            const weight = Math.max(countDots(ldots), countDots(rdots)); // tolerate one-sided / uneven dot strings
             tokens.push(T.Binary(op, weight));
             s = s.slice(m[0].length);
             continue;
