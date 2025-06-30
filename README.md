@@ -1,6 +1,6 @@
 # Dots–Brackets Converter
 
-**The Dots–Brackets Converter** is a lightweight, framework‑agnostic tool for converting between Church-style dot notation (e.g. `.→.`, `:→:`, `.`‑weighted operators) and standard bracketed notation (`(… → …)`). It handles a wide array of logical constructs, offers configurable parsing and serialization strategies, and requires no external dependencies.
+**The Dots–Brackets Converter**, live [here](https://thiagovscoelho.github.io/dots_brackets_converter/), is a lightweight, framework‑agnostic tool for converting between Church-style dot notation (e.g. `.→.`, `:→:`, `.`‑weighted operators) and standard bracketed notation (`(… → …)`). It handles a wide array of logical constructs, offers configurable parsing and serialization strategies, and requires no external dependencies.
 
 ## Features
 
