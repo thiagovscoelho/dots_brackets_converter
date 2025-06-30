@@ -11,7 +11,7 @@ The program supports conversion between dot and bracket punctuation of logical f
 + **Negation:** `¬`, `−`, `∼`, `~`
 
 + **Quantifiers:** Formulas can be preceded with `∀x`, `∃x`, `(∀x)`, `(x)`, etc.
-    + Currently, a single letter in parentheses is only interpreted as a quantifier if it is lowercase, so as to allow `(x)(x=x)` but still prevent `(∀x)(A)` from being interpreted as a pair of quantifiers on `null`, which gives an error. (I welcome pull requests to improve this.)
+    + Currently, a single letter in parentheses is only interpreted as a quantifier if it is lowercase, so as to allow `(x)(x=x)` but still prevent `(∀x)(A)` from being interpreted as a pair of quantifiers on `null`, which gives an error. (This is kind of a hack. I welcome pull requests to improve this.)
     + Currently, a dot between a quantifier and its formula is not supported, and a formula is left in brackets to show that a quantifier applies to it, even when otherwise using dots. This is how Landini ([2012](https://link.springer.com/book/10.1057/9780230360150), [2021](https://link.springer.com/book/10.1007/978-3-030-66356-8)) and [Quine](https://www.hup.harvard.edu/books/9780674554511) did it, but it is not how [Church](https://archive.org/details/introductiontoma0000chur) did it, so I hope to allow this in inputs and outputs soon.
 
 + **Definite description (iota):** Can be used as a quantifier, as in `((ιx)(ϕx))ψ`, or as an atom, as in `(ιx)(ϕx) & B`. Support for this is part of a plan for a future “PM Mode” which will parse dot notation according to [the rules for dot-parsing in *Principia Mathematica*](https://plato.stanford.edu/entries/pm-notation/dots.html).
