@@ -53,7 +53,7 @@ Output:  S → (P → Q) → ((S → P) → (S → Q))
 Input:   (S → (P → Q)) → ((S → P) → (S → Q))
 Output:   S .→. P → Q :→: S → P .→. S → Q
 
-# Dot molecular negation (Brackets → Dots)
+# Dot Molecular Negation (Brackets → Dots)
 Bracketed input:          ~(A → B) → (A → B)
 • DMN off:               ~(A → B) .→. A → B
 • DMN on (less strict):  ~. A → B .→. A → B
