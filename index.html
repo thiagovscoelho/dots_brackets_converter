@@ -247,10 +247,8 @@ function lexer(input, notation, andOp = "∧") {
     if (notation === "dots") {
       const mBare = s.match(/^([.:]+)/);
       if (mBare) {
-        const grp = mBare[1];
-        s = s.slice(grp.length);                  // consume the group
-        const w = countDots(grp);                 // its “weight”
-        out.push(T.Binary(andOp, 0, 0));          // store as Binary
+        s = s.slice(mBare[1].length);      // consume the group
+        out.push(T.Binary(andOp, 0, 0));   // <<– weight = 0 = same as explicit ∧
         continue;
       }
     }
