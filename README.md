@@ -84,12 +84,12 @@ Bracketed input:          ~(A → B) → (A → B)
 • DMN on (stricter):     ~. A → B :→: A → B
 
 # Iota Expressions
-Brackets:  ((ιx)(ϕx))((x & (ιy)(ϕy)) → (z = w))
 Dots:       ((ιx)(ϕx))(x & (ιy)(ϕy) .→. z = w)
+Brackets:  ((ιx)(ϕx))((x & (ιy)(ϕy)) → (z = w))
 
 # Quantifiers + Predicates
-Input:   (∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
-Output:  ((∀ψ)(Mzψz ↔ Ωzψz)) → (DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz)))
+Dots:       (∀ψ)(Mzψz ↔ Ωzψz) .→. DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz))
+Brackets:  ((∀ψ)(Mzψz ↔ Ωzψz)) → (DDD(Mzϕz) ↔ (z)(DDD(Ωzϕz)))
 ```
 
 ## Installation
