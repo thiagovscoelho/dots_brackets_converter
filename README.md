@@ -22,6 +22,8 @@ The program supports conversion between dot and bracket punctuation of logical f
 
 + **Definite description (iota):** Can be used as a quantifier, as in `((ιx)(ϕx))ψ`, or as an atom, as in `(ιx)(ϕx) & B`.
 
+Dots used for conjunction, as in PM style, are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions (making sure to always use it with smaller scope than all other connectives) and then manually find-and-replace that sign with a dot in your output.
+
 ## Dots → Brackets
 
 **Dots → Brackets conversion** is done with tolerance for asymmetry or stronger-than-needed dots. You can write `a → b .→. c`, or `a → b →. c`, or `a → b .→ c`, or `a → b →:: c`, and either way, it will parse as `(a → b) → c`. If a dot sets off a quantifier, then it is considered _weaker_ than other dot-groups of _equal or smaller_ size, following PM rules.
@@ -35,8 +37,6 @@ If a dot is not in a position that sets off an operator or quantifier, then it i
 ## Brackets → Dots
 
 In **Brackets → Dots conversion**, dots are always written symmetrically, as Gregory Landini did, so `p → (p → q)` is written `p .→. p → q`. If you prefer the dots on only one side of the connective, as many authors did, then simply erase them from the unwanted side yourself. I have not bothered making a customized, automated way to omit dots from one side, since I do not think there was any rhyme or reason to how authors chose to do so, and I do not think there are any clear “most logical” ways to do it.
-
-Dots used for conjunction, as in PM style, are not supported in brackets-to-dots conversion. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in brackets-to-dots would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions (making sure to always use it with smaller scope than all other connectives) and then manually find-and-replace that sign with a dot in your output.
 
 ### Molecular negation
 
