@@ -73,7 +73,7 @@ All brackets-to-dots outputs of the program, even the ones in styles that were n
 ```
 # Dots → Brackets (tolerant)
 Input:   S→.P→Q:→:S→P.→.S→Q
-Output:  S → (P → Q) → ((S → P) → (S → Q))
+Output:  (S → (P → Q)) → ((S → P) → (S → Q))
 
 # Brackets → Dots (Landini style)
 Input:   (S → (P → Q)) → ((S → P) → (S → Q))
