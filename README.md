@@ -28,7 +28,9 @@ If you haven’t fully specified a bracketing, conversion will assume a left-ass
 
 ## Dots → Brackets
 
-**Dots → Brackets conversion** is done with tolerance for asymmetry or stronger-than-needed dots. You can write `a .→. b → c`, or `a →. b → c`, or `a .→ b → c`, or `a ::→ b → c`, and either way, it will parse as `a → (b → c)`. If a dot sets off a quantifier, then it is considered _weaker_ than other dot-groups of _equal or smaller_ size, following PM rules.
+**Dots → Brackets conversion** is done with tolerance for asymmetry or stronger-than-needed dots: you can write `a .→. b → c`, or `a →. b → c`, or `a .→ b → c`, or `a ::→ b → c`, and either way, it will parse as `a → (b → c)`.
+
+If a dot-group sets off a quantifier, then it is considered _weaker_ than other dot-groups of _equal or smaller_ size, following PM rules. That is, `(∀x) . a .→. b` unambiguously means the same as `(∀x)(a) → b`, and never means `(∀x)(a → b)`.
 
 Square brackets, `[]`, are interpreted as synonyms of round brackets, `()`.
 
@@ -48,11 +50,11 @@ Partly out of confusion about the rules, and partly in pursuit of a “pure” d
 
 ### Stricter hierarchy
 
-Adding the option to **dot molecular negation** left me with an issue that never came up historically: how should dotting for molecular negation work, if it is used together with the PM/Carnap/Quine/Landini rules? More concretely, is the formula `~. A → B .→. ~. A → B` well-written, or is it ambiguous? It is unambiguous in that its intent is clearly `~(A → B) → ~(A → B)`, which is how I have made the program read it when converting from dots to brackets. But it allows a group of dots to be stronger than a group of dots of *equal size* (in this case, 1 dot) in a way which was never explicitly laid out anywhere as a grammar rule, so it is unclear if writing this formula as `~. A → B :→: ~. A → B` should be grammatically required. (Of course it was never laid out anywhere, since the authors who used dotted molecular negation never used groups of multiple dots, and the authors who used groups of multiple dots never used dotting for molecular negation.) So I gave the user both options: when converting `~(A → B) → ~(A → B)` from brackets to dots, if you choose to **dot molecular negation**, you will get `~. A → B .→. ~. A → B` if the option to **use stricter hierarchy** is turned off, and `~. A → B :→: ~. A → B` if it is turned on.
+Adding the option to **dot molecular negation** left me with an issue that never came up historically: how should dotting for molecular negation work, if it is used together with the PM/Carnap/Quine/Landini rules? More concretely, is the formula `~. A → B .→. ~. A → B` well-written, or is it ambiguous? It is unambiguous in that its intent is clearly `~(A → B) → ~(A → B)`, which is how I have made the program read it when converting from dots to brackets. But it allows a group of dots to be stronger than a group of dots of *equal size* (in this case, 1 dot) in a way which was never explicitly laid out anywhere as a grammar rule, so it is unclear whether writing this formula as `~. A → B :→: ~. A → B` should be grammatically required. (Of course it was never laid out anywhere, since the authors who used dotted molecular negation never used groups of multiple dots, and the authors who used groups of multiple dots never used dotting for molecular negation.) So I gave the user both options: when converting `~(A → B) → ~(A → B)` from brackets to dots, if you choose to **dot molecular negation**, you will get `~. A → B .→. ~. A → B` if the option to **use stricter hierarchy** is turned off, and `~. A → B :→: ~. A → B` if it is turned on.
 
 I also added an analogous option to **use stricter hierarchy** with dotted quantifiers, so that for a formula like `(∀x)(A) → (b → c)`, you can get `(∀x) . A :→: b → c` instead of the PM-like `(∀x) . A .→. b → c`. This was never done historically, but it is easiest for a newbie to read: instead of having to remember the rule that quantifier dots are weaker, you can just remember that bigger groups of dots are stronger than smaller groups of dots.
 
-All brackets-to-dots outputs of the program, even the ones in styles that were never done historically, are correctly interpreted by the dots-to-brackets parser.
+All brackets-to-dots outputs of the program, even the ones in styles that were never done historically, are correctly interpreted by the dots-to-brackets parser. As ChatGPT often said during development, they “round-trip correctly”.
 
 ## Usage
 
