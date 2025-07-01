@@ -250,7 +250,7 @@ function lexer(input, notation, andOp = "∧") {
         const grp = mBare[1];
         s = s.slice(grp.length);                  // consume the group
         const w = countDots(grp);                 // its “weight”
-        out.push(T.Binary(andOp, w, 0));          // store as Binary
+        out.push(T.Binary(andOp, 0, 0));          // store as Binary
         continue;
       }
     }

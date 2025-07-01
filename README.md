@@ -22,7 +22,7 @@ The program supports conversion between dot and bracket punctuation of logical f
 
 + **Definite description (iota):** Can be used as a quantifier, as in `((ιx)(ϕx))ψ`, or as an atom, as in `(ιx)(ϕx) + B`.
 
-Dots `.` used for conjunction, as in PM style (e.g. `a . b .∨. c`, meaning `(a ∧ b) ∨ c`), are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions (making sure to always use it with smaller scope than all other operators) and then manually find-and-replace that sign with a dot in your output.
+Dots `.` used for conjunction, as in PM style (e.g. `a .∨. b . c`, meaning `(a ∨ b) ∧ c`), are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions (making sure to always use it with smaller scope than all other operators) and then manually find-and-replace that sign with a dot in your output.
 
 ## Dots → Brackets
 
