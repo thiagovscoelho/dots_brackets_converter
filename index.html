@@ -53,9 +53,21 @@
   <div class="controls" id="dotNegOption" style="display:none">
   <label><input type="checkbox" id="dotNegChk"> Dot molecular negation</label>
   <label style="margin-left:1em;"><input type="checkbox" id="strictHierChk"> Use stricter hierarchy</label><br />
-  <label><input type="checkbox" id="dotQuantChk"> Dot quantifiers</label><label style="margin-left:1em;">
-  <input type="checkbox" id="strictQuantChk"> Use stricter hierarchy
-</label>
+  <label><input type="checkbox" id="dotQuantChk"> Dot quantifiers</label>
+  <label style="margin-left:1em;"><input type="checkbox" id="strictQuantChk"> Use stricter hierarchy</label>
+  </div>
+  <!-- choose the ∧/•/⋅/&/&&/+ that a bare dot stands for -->
+  <div class="controls" id="andSignOption">
+    <label>Convert conjunction dots:
+      <select id="andSignSel">
+        <option value="∧">∧</option>
+        <option value="•">•</option>
+        <option value="⋅">⋅</option>
+        <option value="&">&amp;</option>
+        <option value="&&">&&</option>
+        <option value="+">+</option>
+      </select>
+    </label>
   </div>
   <pre id="outputFormula"></pre>
 
@@ -120,7 +132,7 @@ const T = {
  *  2.   Lexer      *
  ********************/
 
-function lexer(input, notation) {
+function lexer(input, notation, andOp = "∧") {
   let s = input.replace(/\[/g, "(").replace(/\]/g, ")");
   const out = [];
 
@@ -228,6 +240,18 @@ function lexer(input, notation) {
     }
     if (notation==="brackets" && (m=s.match(REGEX.binary))) {
       out.push(T.Binary(m[1],0)); s=s.slice(m[0].length); continue;
+    }
+
+    /* === NEW CASE: a lone dot/colon group stands for conjunction === */
+    if (notation === "dots") {
+      const mBare = s.match(/^([.:]+)/);
+      if (mBare) {
+        const grp = mBare[1];
+        s = s.slice(grp.length);                  // consume the group
+        const w = countDots(grp);                 // its “weight”
+        out.push(T.Binary(andOp, w, 0));          // store as Binary
+        continue;
+      }
     }
 
     // Parens
@@ -475,13 +499,17 @@ const $modeRadios  = document.querySelectorAll("input[name=mode]");
 const $dotNegBlock = qs("#dotNegOption");
 const $dotQuantChk = qs("#dotQuantChk");
 const $strictQuantChk = qs("#strictQuantChk");
+const $andSignSel   = qs("#andSignSel");
+const $andSignBlock = qs("#andSignOption");
 
 function refreshUI(){
   const mode = document.querySelector("input[name=mode]:checked").value;
-  $dotNegBlock.style.display = mode === "bracketsToDots" ? "" : "none";
-  $strictChk.parentElement.style.display = $dotNegChk.checked ? "" : "none";
+  $dotNegBlock.style.display   = mode === "bracketsToDots" ? "" : "none";
+  $andSignBlock.style.display  = mode === "dotsToBrackets" ? "" : "none";  // NEW
+  $strictChk.parentElement.style.display =
+    $dotNegChk.checked ? "" : "none";
   $strictQuantChk.parentElement.style.display =
-  $dotQuantChk.checked ? "" : "none";
+    $dotQuantChk.checked ? "" : "none";
 }
 $modeRadios.forEach(r=>r.addEventListener("change",refreshUI));
 $dotNegChk.addEventListener("change",refreshUI);
@@ -493,17 +521,18 @@ let currentNotation = "dots"; // global used by parser for nested iota desc
 qs("#convertBtn").addEventListener("click", () => {
   const mode = document.querySelector("input[name=mode]:checked").value;
   const txt  = $in.value.trim();
+  const andOp = $andSignSel.value;
   try {
     let tokens, ast, res;
     if(mode === "dotsToBrackets"){
       currentNotation="dots";
-      tokens = lexer(txt, "dots");
+      tokens = lexer(txt, "dots", andOp);
       attachBP(tokens, "dots");
       ast = parse(tokens);
       res = toBrackets(ast);
     } else {
       currentNotation="brackets";
-      tokens = lexer(txt, "brackets");
+      tokens = lexer(txt, "brackets", andOp);
       attachBP(tokens, "brackets");
       ast = parse(tokens);
       annotateDepth(ast);
