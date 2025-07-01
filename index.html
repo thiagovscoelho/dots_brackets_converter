@@ -402,7 +402,7 @@ function toDots(node, dotNeg=false, strict=false, dotQuant=false, strictQuant=fa
            the binary we’re negating may have been displayed two
            levels stronger than its stored weight (see §2).           */
         if (strictQuant && dotQuant) w += 1;
-        if (strict && dotNeg)     w += 1;
+        //if (strict && dotNeg)     w += 1;
 
         return `${node.op}${dotStr(w)} ` +
                toDots(node.child,
