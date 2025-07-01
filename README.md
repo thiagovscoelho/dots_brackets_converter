@@ -10,7 +10,7 @@ To test the program, try converting the tautology `((¬c ⊃ b) ⊃ ((b ⊃ a) �
 
 The program supports conversion between dot and bracket punctuation of logical formulas with these symbols:
 
-+ **Binary connectives:** `→`, `⇒`, `⊃`, `∧`, `•`, `⋅`, `&`, `&&`, `∨`, `+`, `|`, `||`, `⊕`, `⊙`, `↑`, `↓`, `≡`, `≢`, `⇔`, `⇋`, `↔`, `↮`, `⇏`, `↛`, `⊅`, `⇍`, `⊄`, `↚`, `=`, `=Df`, `=Df.`, `=df`, `=df.`
++ **Binary operators:** `→`, `⇒`, `⊃`, `∧`, `•`, `⋅`, `&`, `&&`, `∨`, `+`, `|`, `||`, `⊕`, `⊙`, `↑`, `↓`, `≡`, `≢`, `⇔`, `⇋`, `↔`, `↮`, `⇏`, `↛`, `⊅`, `⇍`, `⊄`, `↚`, `=`, `=Df`, `=Df.`, `=df`, `=df.`, `>`, `<`, `≤`, `≥`, `⊆`, `⊇`, `⊏`, `⊑`, `⊐`, `⊒`
 
 + **Negation:** `¬`, `−`, `∼`, `~`
 
@@ -22,15 +22,15 @@ The program supports conversion between dot and bracket punctuation of logical f
 
 + **Definite description (iota):** Can be used as a quantifier, as in `((ιx)(ϕx))ψ`, or as an atom, as in `(ιx)(ϕx) & B`.
 
-Dots `.` used for conjunction, as in PM style (e.g. `a . b .∨. c`, meaning `(a ∧ b) ∨ c`), are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions (making sure to always use it with smaller scope than all other connectives) and then manually find-and-replace that sign with a dot in your output.
+Dots `.` used for conjunction, as in PM style (e.g. `a . b .∨. c`, meaning `(a ∧ b) ∨ c`), are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions (making sure to always use it with smaller scope than all other operators) and then manually find-and-replace that sign with a dot in your output.
 
 ## Dots → Brackets
 
-**Dots → Brackets conversion** is done with tolerance for asymmetry or stronger-than-needed dots. You can write `a → b .→. c`, or `a → b →. c`, or `a → b .→ c`, or `a → b →:: c`, and either way, it will parse as `(a → b) → c`. If a dot sets off a quantifier, then it is considered _weaker_ than other dot-groups of _equal or smaller_ size, following PM rules.
+**Dots → Brackets conversion** is done with tolerance for asymmetry or stronger-than-needed dots. You can write `a .→. b → c`, or `a →. b → c`, or `a .→ b → c`, or `a ::→ b → c`, and either way, it will parse as `a → (b → c)`. If a dot sets off a quantifier, then it is considered _weaker_ than other dot-groups of _equal or smaller_ size, following PM rules.
 
 Square brackets, `[]`, are interpreted as synonyms of round brackets, `()`.
 
-If you haven’t specified a bracketing, conversion will assume a right-associative bracketing, so `a → b → c → d` is interpreted as `a → (b → (c → d))` in brackets, or `a :→: b .→. c → d` in dots. **Note that this does not always capture user intent!** For instance, when reading `a|b` as “a divides b”, you might write `(a|b ∧ b|c) → a|c`, or alternatively, `a|b ∧ b|c .→. a|c`, which [is a mathematical truth](https://thiago-gpt.blogspot.com/2025/06/proof-that-ab-bc-ac.html). But `|` is a binary connective that can mean conjunction, or anything else, and no particular interpretation is assumed in parsing, so the program will parse this as `(a | (b ∧ (b | c))) → (a | c)`, which is not your intent. I welcome suggestions on how to make this more intuitive, but for now, simply make sure your formula is *fully* bracketed/dotted rather than relying on precedence orders from a specific context. (In this case, the formula is `((a|b) ∧ (b|c)) → (a|c)` with brackets, or `a|b .∧. b|c :→: a|c` with dots.)
+If you haven’t specified a bracketing, conversion will assume a left-associative bracketing, so `a → b → c → d` is interpreted as `((a → b) → c) → d` in brackets, or `a → b .→. c :→: d` in dots. **Note that this does not always capture user intent!** For instance, when reading `a|b` as “a divides b”, you might write `(a|b ∧ b|c) → a|c`, or alternatively, `a|b ∧ b|c .→. a|c`, which [is a mathematical truth](https://thiago-gpt.blogspot.com/2025/06/proof-that-ab-bc-ac.html). But `|` is a binary connective that can mean conjunction, or anything else, and no particular interpretation is assumed in parsing, so the program will parse this as `(((a | b) ∧ b) | c) → (a | c)`, which is not your intent. I welcome suggestions on how to make this more intuitive, but for now, simply make sure your formula is *fully* bracketed/dotted rather than relying on precedence orders from a specific context. (In this case, the formula is `((a|b) ∧ (b|c)) → (a|c)` with brackets, or `a|b .∧. b|c :→: a|c` with dots.)
 
 If a dot is not in a position that sets off an operator or quantifier, then it is interpreted as a conjunction, and changed into the user-selected conjunction sign. This is then parsed just as if you had written your selected conjunction sign in those positions in the first place. By doing this, the program fully implements [the rules for dot-parsing in *Principia Mathematica*](https://plato.stanford.edu/entries/pm-notation/dots.html).
 
@@ -101,7 +101,7 @@ No dependencies or server required—everything runs in the browser.
 
 ## Contributing
 
-Pull requests welcome for bug fixes, new connectives, or UI improvements.
+Pull requests welcome for bug fixes, new syntax, or UI improvements.
 
 ## License
 
