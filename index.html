@@ -113,7 +113,7 @@ const T = {
   Binary:(op,w,ld=0)         => ({ type:"Binary",op,   weight:w, ldots:ld }),
   LPar :                      { type:"LP" },
   RPar :                      { type:"RP" },
-  Iota : (v,desc)            => ({ type:"IotaQuant", varName:v, desc })
+  Iota : (v,desc,w=null)     => ({ type:"IotaQuant", varName:v, desc, weight:w })
 };
 
 /********************
@@ -152,8 +152,9 @@ function lexer(input, notation) {
           while(i<s.length && depth){ if(s[i]==="(")depth++; else if(s[i]===")")depth--; i++; }
         if (!depth && s[i] === ")") {        // first ')' closes the second '('
           const desc = s.slice(pos, i - 1);  // drop that closing ')'
-          out.push(T.Iota(varName, desc));
-          s = s.slice(i + 1);                // skip the remaining "))"
+          s = s.slice(i + 1);                // ① drop the quantifier text
+          const w = consumeQuantDots();      // ② read optional dot-group
+          out.push(T.Iota(varName, desc, w));// ③ store its weight (or null)
           continue;
              }
         }
@@ -264,7 +265,13 @@ function attachBP(tokens, notation){
        t.bp = 19;                                           // old default
      }
    } else if (t.type==="IotaQuant"){
-     t.bp = 18;                         // just under “ordinary” quantifiers
+     if (notation==="dots" && t.weight!=null){
+       /* behaves exactly like a dotted ∀/∃: one-dot-fewer rule, plus ε-advantage */
+       const eff = Math.max(0, t.weight - 1);
+       t.bp = (MAX - eff)*2 + 0.5;
+     } else {
+       t.bp = 18;                       // old fixed precedence
+     }
    }
   });
 }
@@ -404,10 +411,31 @@ function toDots(node, dotNeg=false, strict=false, dotQuant=false, strictQuant=fa
       return `${pre} ${dot} ${body}`;
      }
     case "IotaQuant": {
-      const pre=`((ι${node.varName})(${toDots(node.desc,dotNeg,strict)}))`;
-      const body=toDots(node.child,dotNeg,strict,dotQuant,strictQuant);
-      return ["Atom","Not","Quant","IotaQuant"].includes(node.child.type) ? pre+body : `${pre}(${body})`;
-    }
+      const pre  = `((ι${node.varName})(${toDots(node.desc,
+                                                 dotNeg, strict,
+                                                 dotQuant, strictQuant)}))`;
+      const body = toDots(node.child,
+                          dotNeg,   strict,
+                          dotQuant, strictQuant);
+
+      /* If we’re NOT dotting quantifiers, keep old behaviour. */
+      if (!dotQuant){
+        return ["Atom","Not","Quant","IotaQuant"].includes(node.child.type)
+               ? pre + body
+               : `${pre}(${body})`;
+      }
+
+      /* Otherwise pick a dot weight one level stronger than the first
+         binary (same heuristic as for ∀/∃).                         */
+      const guessWeight = (n) => {
+        if (n.type === "Binary")                            return (n.weight ?? 0) + 1;
+        if (n.type === "Not" && n.child?.type === "Binary") return (n.child.weight ?? 0) + 1;
+        return 1;
+      };
+      const w   = guessWeight(node.child);
+      const dot = dotStr(w);
+      return `${pre} ${dot} ${body}`;
+     }
     case "Binary": {
       let w=node.weight;
       if(strict && dotNeg){
@@ -417,7 +445,7 @@ function toDots(node, dotNeg=false, strict=false, dotQuant=false, strictQuant=fa
       /* NEW: dotted-quantifier stricter rule */
       if (strictQuant && dotQuant){
         const qW = (n)=>{
-         if (n.type!=="Quant") return -1;
+         if (n.type!=="Quant" && n.type!=="IotaQuant") return -1;
           if (n.child.type==="Binary")                   return (n.child.weight??0)+1;
           if (n.child.type==="Not" && n.child.child?.type==="Binary")
                                                         return (n.child.child.weight??0)+1;
