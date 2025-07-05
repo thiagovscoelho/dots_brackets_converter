@@ -22,7 +22,7 @@ The program supports conversion between dot and bracket punctuation of logical f
 
 + **Brackets:** Square brackets, `[]`, are interpreted as synonyms of round brackets, `()`.
 
-    + If you haven’t fully specified a bracketing, conversion will assume a left-associative bracketing, so `a → b → c → d` is interpreted as `((a → b) → c) → d` in brackets, or `a → b .→. c :→: d` in dots. **Note that this does not always capture user intent!** For instance, when reading `a|b` as “a divides b”, you might write `(a|b ∧ b|c) → a|c`, or alternatively, `a|b ∧ b|c .→. a|c`, which [is a mathematical truth](https://thiago-gpt.blogspot.com/2025/06/proof-that-ab-bc-ac.html). But `|` is a binary connective that can mean conjunction, or anything else, and no particular interpretation is assumed in parsing, so the program will parse this as `(((a | b) ∧ b) | c) → (a | c)`, which is not your intent. I welcome suggestions on how to make this more intuitive, but for now, simply make sure your formula is *fully* bracketed/dotted rather than relying on precedence orders from a specific context. (In this case, the formula is `((a|b) ∧ (b|c)) → (a|c)` with brackets, or `a|b .∧. b|c :→: a|c` with dots.)
+    + If you haven’t fully specified a bracketing, conversion will assume a left-associative bracketing, so `a → b → c → d` is interpreted as `((a → b) → c) → d` in brackets, or `a → b .→. c :→: d` in PM-style dots. **Note that this does not always capture user intent!** For instance, when reading `a|b` as “a divides b”, you might write `(a|b ∧ b|c) → a|c`, or alternatively, `a|b ∧ b|c .→. a|c`, which [is a mathematical truth](https://thiago-gpt.blogspot.com/2025/06/proof-that-ab-bc-ac.html). But `|` is a binary connective that can mean conjunction, or anything else, and no particular interpretation is assumed in parsing, so the program will parse this as `(((a | b) ∧ b) | c) → (a | c)`, which is not your intent. I welcome suggestions on how to make this more intuitive, but for now, simply make sure your formula is *fully* bracketed/dotted rather than relying on precedence orders from a specific context. (In this case, the formula is `((a|b) ∧ (b|c)) → (a|c)` with brackets, or `a|b .∧. b|c :→: a|c` with PM-style dots.)
 
 ## Church-style conversion
 
@@ -52,7 +52,7 @@ If a dot is not in a position that sets off an operator or quantifier, then it i
 
 ## Brackets → Dots (PM-style)
 
-In **Brackets → Dots conversion**, dots are always written symmetrically, as Gregory Landini did, so `p → (p → q)` is written `p .→. p → q`. If you prefer the dots on only one side of the connective, as many authors did, then simply erase them from the unwanted side yourself. I have not bothered making a customized, automated way to omit dots from one side, since I do not think there was any rhyme or reason to how authors chose to do so, and I do not think there are any clear “most logical” ways to do it.
+In **Brackets → Dots conversion**, dots are always written symmetrically, as Gregory Landini did, so `p → (p → q)` is written `p .→. p → q`. If you prefer the dots on only one side of the connective, as many authors did, then simply erase them from the unwanted side yourself. I have not bothered making a customized, automated way to omit dots from one side, since I do not think there was any rhyme or reason to how authors chose to do so, and I do not think there are any clear “most logical” ways to do it. When converting back to brackets, the formula will still work with the dot removed from either side, as covered just above.
 
 ### Molecular negation
 
