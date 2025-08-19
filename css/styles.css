@@ -1,30 +1,240 @@
+/* =========================================================
+   The Dots–Brackets Converter — styles.css
+   Sleek, accessible, framework‑agnostic styles
+   ========================================================= */
+
+:root {
+  /* Color system (light) */
+  --bg:            #f8fafc;        /* slate-50 */
+  --text:          #0f172a;        /* slate-900 */
+  --muted:         #475569;        /* slate-600 */
+  --card:          #ffffff;        /* white */
+  --surface:       #fdfefe;        /* near-white */
+  --code-bg:       #f1f5f9;        /* slate-100 */
+  --border:        #e2e8f0;        /* slate-200 */
+  --accent:        #2563eb;        /* blue-600 */
+  --accent-hover:  #1d4ed8;        /* blue-700 */
+  --focus:         #60a5fa;        /* blue-400 */
+  --shadow:        0 1px 2px rgb(0 0 0 / 0.05), 0 10px 30px rgb(15 23 42 / 0.07);
+  --shadow-sm:     0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:           #0b1020;        /* deep navy */
+    --text:         #e5e7eb;        /* zinc-200 */
+    --muted:        #9aa5b1;        /* cool gray */
+    --card:         #0f172a;        /* slate-900 */
+    --surface:      #0c1326;        /* slightly lighter than bg */
+    --code-bg:      #0b1220;        /* dark panel */
+    --border:       #1f2937;        /* slate-800 */
+    --accent:       #60a5fa;        /* blue-400 */
+    --accent-hover: #3b82f6;        /* blue-500 */
+    --focus:        #a5b4fc;        /* indigo-300 */
+    --shadow:       0 1px 2px rgb(0 0 0 / 0.35), 0 18px 50px rgb(0 0 0 / 0.35);
+    --shadow-sm:    0 1px 2px rgb(0 0 0 / 0.25);
+  }
+}
+
+/* --------------------------
+   Base / typography
+   -------------------------- */
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
 body {
-  font-family: sans-serif;
-  max-width: 800px;
-  margin: 2em auto;
-  padding: 0 1em;
+  margin: 0;
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", Ubuntu, Cantarell, "Fira Sans", sans-serif;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
 }
+
+/* Center the page content without a wrapper */
+:where(h1, p, .controls, textarea, pre) {
+  max-width: min(960px, 92vw);
+  margin-inline: auto;
+}
+
 h1 {
-  text-align: center;
+  margin: clamp(1rem, 2.5vw, 2rem) auto 0.25rem;
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  line-height: 1.2;
 }
-textarea,
-pre {
-  width: 100%;
-  font-family: monospace;
-  font-size: 1rem;
+
+p {
+  margin: 0.25rem auto 1rem;
+  color: var(--muted);
 }
+
+/* Link styling */
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+
+/* Selection */
+::selection { background: var(--accent); color: #fff; }
+
+/* --------------------------
+   Controls cluster
+   -------------------------- */
 .controls {
-  margin: 1em 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  margin: 1rem auto;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
-.controls label {
-  margin-right: 1em;
+
+/* Radio/checkbox labels */
+.controls label { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+  font-weight: 500; 
 }
-button {
-  padding: 0.5em 1em;
-  font-size: 1rem;
+
+input[type="radio"],
+input[type="checkbox"] {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  accent-color: var(--accent);
 }
-pre {
-  background: #f5f5f5;
-  padding: 1em;
-  white-space: pre-wrap;
+
+/* Selects share the same visual language as buttons */
+select {
+  appearance: none;
+  padding: 0.55rem 2.25rem 0.55rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="%23a0aec0"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 0.55rem center;
+  color: inherit;
+  box-shadow: var(--shadow-sm) inset;
+  cursor: pointer;
+}
+
+select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Make the option groups feel tidy */
+#andSignOption label,
+#dotNegOption label { white-space: nowrap; }
+
+/* --------------------------
+   Textarea (input formula)
+   -------------------------- */
+textarea#inputFormula {
+  display: block;
+  width: 100%;
+  min-height: 10rem; /* ensures comfortable editing area */
+  padding: 1rem 1.125rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  box-shadow: var(--shadow);
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.975rem;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+textarea::placeholder { color: color-mix(in lab, var(--muted) 72%, transparent); }
+
+textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* --------------------------
+   Primary action button
+   -------------------------- */
+button#convertBtn {
+  appearance: none;
+  border: 0;
+  padding: 0.7rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 20px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+button#convertBtn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+button#convertBtn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+button#convertBtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* --------------------------
+   Output panel
+   -------------------------- */
+pre#outputFormula {
+  margin: 0.75rem auto 2rem;
+  padding: 1rem 1.125rem 1.25rem;
+  background: var(--code-bg);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  min-height: 6.25rem;
+  white-space: pre-wrap; /* keep lines from overflowing */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  position: relative;
+  box-shadow: var(--shadow);
+}
+
+/* A small floating label for the output panel */
+pre#outputFormula::before {
+  content: "Output";
+  position: absolute;
+  top: -0.7rem;
+  left: 0.9rem;
+  padding: 0 0.5rem;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  border-radius: 6px;
+}
+
+/* --------------------------
+   Focus styles (generic)
+   -------------------------- */
+:where(input, select, textarea, button):focus-visible {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* --------------------------
+   Responsive tweaks
+   -------------------------- */
+@media (max-width: 640px) {
+  .controls { padding: 0.65rem 0.75rem; gap: 0.6rem 0.75rem; }
+  h1 { font-size: clamp(1.35rem, 5.5vw, 1.75rem); }
+  textarea#inputFormula { font-size: 0.95rem; }
+}
+
+/* --------------------------
+   Motion preferences
+   -------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* --------------------------
+   Print styles (useful for notes)
+   -------------------------- */
+@media print {
+  :root { --bg: #fff; --text: #000; --muted: #333; --card: #fff; --surface: #fff; --code-bg: #fff; --border: #bbb; --accent: #000; }
+  body { color: #000; }
+  .controls { box-shadow: none; border-color: #bbb; }
+  button, select { border: 1px solid #888 !important; background: #fff !important; color: #000 !important; box-shadow: none !important; }
 }
