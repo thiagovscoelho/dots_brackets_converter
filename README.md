@@ -38,9 +38,7 @@ So, for instance, the formula `(∀x)(a + (b + (c+ d)) + (e + f))` is written in
 
 ***Quantifier dot strength.*** Following the Carnap/PM practice, dot-groups that set off quantifiers are considered *weaker* than other dot-groups of *equal or smaller* size when doing dots-to-brackets conversion, but in brackets-to-dots conversion, you may choose to generate them with different sizes, so as not to rely on this assumption.
 
-***Conjunction dots.*** Dots `.` used for conjunction, as in PM style (e.g. `a .∨. b . c`, meaning `a ∨ (b ∧ c)`), are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions and then manually find-and-replace that sign with a dot in your output.
-
-*Note on manually converting conjunction dots.* For PM style, make sure to always use conjunction dots with smaller scope than all other operators. Quine allowed himself to strengthen a conjunction dot with further dots, as in the formula `φ.ψ.⊃χ:ψ∨φ:≡χ` (*Mathematical Logic*, pp. 38–39), which he intends to be read as `(((φ ∧ ψ) ⊃ χ) ∧ (ψ ∨ φ)) ≡ χ` – notice that the second `∧` was converted from a group of two dots (`:`), where the second dot was added to broaden the conjunction’s scope – in Landini style, to turn the `∧` into a `:∧:`.
+***Conjunction dots.*** Dots `.` used for conjunction, as in PM style (e.g. `a .∨. b . c`, meaning `a ∨ (b ∧ c)`), are supported in inputs, but not in outputs. Not only are such dots confusing to read anyway (and the similar-looking `⋅` is already supported besides), but supporting conjunction dots in outputs would also make it easier to make a mistake by accidentally running a formula through the wrong mode of the program, and possibly leave the user confused by how a dot was left unaffected. If you want to convert a formula into a formula that uses dots for conjunction, simply use a supported binary connective for your conjunctions and then find-and-replace that sign with a dot in your output.
 
 ## Dots → Brackets (PM-style)
 
@@ -49,6 +47,8 @@ So, for instance, the formula `(∀x)(a + (b + (c+ d)) + (e + f))` is written in
 If a dot-group sets off a quantifier, then it is considered _weaker_ than other dot-groups of _equal or smaller_ size, following PM rules. That is, `(∀x) . a .→. b` unambiguously means the same as `(∀x)(a) → b`, and never means `(∀x)(a → b)`.
 
 If a dot is not in a position that sets off an operator or quantifier, then it is interpreted as a conjunction, and changed into the user-selected conjunction sign. This is then parsed just as if you had written your selected conjunction sign in those positions in the first place. By doing this, the program fully implements [the rules for dot-parsing in *Principia Mathematica*](https://plato.stanford.edu/entries/pm-notation/dots.html).
+
+The program also allows a group of more than one dot to function as a stronger conjunction, which Russell and Whitehead did not allow, but Quine did allow. For instance, in *Mathematical Logic*, pp. 38–39, Quine intends the formula `φ.ψ.⊃χ:ψ∨φ:≡χ` to be read as `(((φ ∧ ψ) ⊃ χ) ∧ (ψ ∨ φ)) ≡ χ`. Notice that the second `∧` was converted from a group of two dots (`:`), where the second dot was added to broaden the conjunction’s scope – in Landini style, to turn the `∧` into a `:∧:`.
 
 ## Brackets → Dots (PM-style)
 
