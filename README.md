@@ -48,7 +48,7 @@ If a dot-group sets off a quantifier, then it is considered _weaker_ than other 
 
 If a dot is not in a position that sets off an operator or quantifier, then it is interpreted as a conjunction, and changed into the user-selected conjunction sign. This is then parsed just as if you had written your selected conjunction sign in those positions in the first place. By doing this, the program fully implements [the rules for dot-parsing in *Principia Mathematica*](https://plato.stanford.edu/entries/pm-notation/dots.html).
 
-The program also allows a group of more than one dot to function as a stronger conjunction, which Russell and Whitehead did not allow, but Quine did allow. For instance, in *Mathematical Logic*, pp. 38–39, Quine intends the formula `φ.ψ.⊃χ:ψ∨φ:≡χ` to be read as `(((φ ∧ ψ) ⊃ χ) ∧ (ψ ∨ φ)) ≡ χ`. Notice that the second `∧` was converted from a group of two dots (`:`), where the second dot was added to broaden the conjunction’s scope – in Landini style, to turn the `∧` into a `:∧:`.
+The program also allows a group of more than one dot to function as a stronger conjunction, which Russell and Whitehead did not allow, but Quine did allow. For instance, in pp. 38–39 of *Mathematical Logic*, Quine intends the formula `φ . ψ .⊃ χ : ψ ∨ φ :≡ χ` to be read as `(((φ ∧ ψ) ⊃ χ) ∧ (ψ ∨ φ)) ≡ χ`. Notice that the second `∧` was converted from a group of two dots (`:`), where the second dot was added to broaden the conjunction’s scope – in Landini style, to turn the `∧` into a `:∧:`.
 
 ## Brackets → Dots (PM-style)
 
