@@ -183,7 +183,7 @@ function lexer(input, notation, andOp = "∧") {
     if (notation === "dots") {
       const mBare = s.match(/^([.:]+)/);
       if (mBare) {
-        const w = countDots(mBare[1]);     // '.' = 1, ':' = 2, '.:' = 3, …
+        const w = countDots(mBare[1])-1;     // '.' = 1, ':' = 2, '.:' = 3, …
         s = s.slice(mBare[1].length);      // consume the group
         out.push(T.Binary(andOp, w, 0));   // use its weight
         continue;
