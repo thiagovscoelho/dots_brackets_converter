@@ -23,6 +23,9 @@ const dottedRep = (w, op) => {
   return `${left}${op}${right}`;
 };
 
+let currentNotation = "dots"; // global used by parser for nested iota desc
+let currentAndOp = "∧"; // used by parse() just like currentNotation
+
 /*************************
  *  1.  Token machinery  *
  *************************/
@@ -53,7 +56,8 @@ const T = {
   Binary:(op,w,ld=0)         => ({ type:"Binary",op,   weight:w, ldots:ld }),
   LPar :                      { type:"LP" },
   RPar :                      { type:"RP" },
-  Iota : (v,desc,w=null)     => ({ type:"IotaQuant", varName:v, desc, weight:w })
+  Iota : (v,desc,w=null)     => ({ type:"IotaQuant", varName:v, desc, weight:w }),
+  IotaTerm: (v,desc)         => ({ type:"IotaTerm",  varName:v, desc })   // ← NEW
 };
 
 /********************
@@ -101,7 +105,7 @@ function lexer(input, notation, andOp = "∧") {
       }
     }
 
-    // Iota‑atom (ιx)(ψ)
+    // Iota-atom (ιx)(ψ)
     if (s.startsWith("(ι")) {
       let pos = 2;
       const mVar = s.slice(pos).match(REGEX.atomName);
@@ -113,7 +117,12 @@ function lexer(input, notation, andOp = "∧") {
           if(s[pos]==="("){
             let depth=1, i=pos+1;
             while(i<s.length && depth){ if(s[i]==="(")depth++; else if(s[i]===")")depth--; i++; }
-            if(!depth){ const full=s.slice(0,i); out.push(T.Atom(full)); s=s.slice(i); continue; }
+            if(!depth){
+              const desc = s.slice(pos+1, i-1);      // inner formula text
+              out.push(T.IotaTerm(varName, desc));   // ← emit IotaTerm, not Atom
+              s = s.slice(i);                        // consume "(ιx)(…)"
+              continue;
+            }
           }
         }
       }
@@ -243,10 +252,16 @@ function parse(tokens){
       case "Not":  return { type:"Not", op:tok.op, child: parseExpr(tok.bp) };
       case "Quant":return { type:"Quant", sym:tok.sym, varName:tok.varName, child: parseExpr(tok.bp) };
       case "IotaQuant": {
-        const innerToks = lexer(tok.desc, currentNotation);
+        const innerToks = lexer(tok.desc, currentNotation, currentAndOp);
         attachBP(innerToks, currentNotation);
         const descAst   = parse(innerToks);
         return { type:"IotaQuant", varName:tok.varName, desc:descAst, child: parseExpr(tok.bp) };
+      }
+      case "IotaTerm": {                                         // ← NEW
+        const innerToks = lexer(tok.desc, currentNotation, currentAndOp);
+        attachBP(innerToks, currentNotation);
+        const descAst   = parse(innerToks);
+        return { type:"IotaTerm", varName: tok.varName, desc: descAst };
       }
       case "LP":   const e=parseExpr(0); expect("RP"); return e;
       default:      throw Error("Unexpected token "+tok.type);
@@ -298,8 +313,11 @@ function toBrackets(node, root=true){
     }
     case "IotaQuant":{
       const pre = `((ι${node.varName})(${toBrackets(node.desc,false)}))`;
-      const body=toBrackets(node.child,false);
+      const body= toBrackets(node.child,false);
       return pre + body;
+    }
+    case "IotaTerm": {                                           // ← NEW
+      return `(ι${node.varName})(${toBrackets(node.desc,false)})`;
     }
     case "Binary":{
       const l=toBrackets(node.left,false);
@@ -360,15 +378,10 @@ function toDots(node, dotNeg=false, strict=false, dotQuant=false, strictQuant=fa
       const w   = guessWeight(node.child);
       const dot = dotStr(w);
       return `${pre} ${dot} ${body}`;
-     }
+    }
     case "IotaQuant": {
-      const pre  = `((ι${node.varName})(${toDots(node.desc,
-                                                 dotNeg, strict,
-                                                 dotQuant, strictQuant)}))`;
-      const body = toDots(node.child,
-                          dotNeg,   strict,
-                          dotQuant, strictQuant);
-
+      const pre  = `((ι${node.varName})(${toDots(node.desc, dotNeg, strict, dotQuant, strictQuant)}))`;
+      const body = toDots(node.child, dotNeg, strict, dotQuant, strictQuant);
       /* If we’re NOT dotting quantifiers, keep old behaviour. */
       if (!dotQuant){
         return ["Atom","Not","Quant","IotaQuant"].includes(node.child.type)
@@ -386,7 +399,11 @@ function toDots(node, dotNeg=false, strict=false, dotQuant=false, strictQuant=fa
       const w   = guessWeight(node.child);
       const dot = dotStr(w);
       return `${pre} ${dot} ${body}`;
-     }
+    }
+    case "IotaTerm": {                                           // ← NEW
+      const inner = toDots(node.desc, dotNeg, strict, dotQuant, strictQuant);
+      return `(ι${node.varName})(${inner})`;
+    }
     case "Binary": {
       let w=node.weight;
       if(strict && dotNeg){

@@ -90,7 +90,7 @@ let currentNotation = "dots"; // global used by parser for nested iota desc
 qs("#convertBtn").addEventListener("click", () => {
   const mode   = document.querySelector("input[name=mode]:checked").value;
   const txt    = $in.value.trim();
-  const andOp  = $andSignSel.value;
+  const andOp  = $andSignSel.value; currentAndOp = andOp;
   const church = $dotStyleSel.value === "church";   // <-- NEW
 
   try {
