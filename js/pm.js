@@ -43,8 +43,8 @@ const REGEX = {
   quantParen   : /^(\(\s*(∀|∃)([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)\s*\))/,
   quant        : /^(∀|∃)([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)/,
   bindVarParen : /^(\(\s*([A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*)\s*\))/,
-  dottedNeg    : /^([.:]*)\s*(NOT|¬|−|∼|~)\s*([.:]*)/,
-  neg          : /^(NOT|¬|−|∼|~)/,
+  dottedNeg    : /^([.:]*)\s*(NOT|¬|−|∼|~|□|◇|Δ|∇|⊡|⟐|◆|■)\s*([.:]*)/,
+  neg          : /^(NOT|¬|−|∼|~|□|◇|Δ|∇|⊡|⟐|◆|■)/,
   atomName     : /^[A-Za-z\u0370-\u03FF][A-Za-z0-9\u0370-\u03FF]*/,
   ws           : /^\s+/
 };
